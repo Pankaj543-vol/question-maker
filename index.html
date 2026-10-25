@@ -195,6 +195,10 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 .pdfov .pbot{display:flex;flex-wrap:wrap;gap:8px;padding-top:8px}
 .pdfov .pbot .btn{flex:1;min-width:140px;padding:11px}
 .pdfov .zoom{display:flex;gap:6px}.pdfov .zoom .btn{padding:5px 12px}
+.findbar{display:flex;flex-direction:column;gap:6px}
+.findbar .row input{flex:1;min-width:120px}
+::highlight(fall){background:#ffe58a;color:#111}
+::highlight(fcur){background:#ff9f43;color:#111}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head><body>
@@ -232,6 +236,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২৫ অক্টোবর, দুপুর ১টা (খোঁজা-বদলানো যুক্ত)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -516,8 +521,19 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
           <select id="lineN" aria-label="কটা দাগ"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option><option>8</option><option>10</option></select>
           <button class="btn" id="linesBtn">≡ উত্তর লেখার দাগ</button>
           <button class="btn" id="boxBtn">☐ বক্স</button>
+          <button class="btn" id="findBtn">🔍 খুঁজুন ও বদলান</button>
           <button class="btn" id="symBtn">∑ অংকের চিহ্ন</button>
           <button class="btn" id="rboxBtn">☐ লাইনের শেষে ডানদিকে বক্স</button>
+        </div>
+        <div class="eqedit findbar" id="findbar" hidden>
+          <div class="row" style="justify-content:space-between"><b style="font-size:.92rem">খুঁজুন ও বদলান</b><button class="btn" id="findClose" style="padding:5px 10px">✕ বন্ধ</button></div>
+          <div class="row"><input class="libin" id="findQ" placeholder="কী খুঁজবেন? যেমন: *" autocomplete="off"></div>
+          <div class="row"><input class="libin" id="findR" placeholder="কী দিয়ে বদলাবেন? (খালি রাখলে মুছে যাবে)" autocomplete="off"></div>
+          <div class="row">
+            <button class="btn" id="findPrev">⬅ আগেরটা</button><button class="btn" id="findNext">পরেরটা ➜</button>
+            <button class="btn" id="findOne">এটা বদলান</button><button class="btn primary" id="findAll" style="width:auto">সব বদলান</button>
+          </div>
+          <span class="small" id="findInfo" aria-live="polite"></span>
         </div>
         <div class="symb" id="symboard" hidden></div>
         <p class="small" style="margin:0 0 6px">দাগ আর বক্স বসে লেখার যেখানে শেষবার ট্যাপ করেছেন সেখানে। টেবিল আর উত্তরের দাগ বসে সেই লাইনের নিচে।</p>
@@ -22392,6 +22408,53 @@ function previewEq(){
 }
 $("eqtex").addEventListener("input",previewEq);
 $("eqok").onclick=()=>{if(!eqEl)return;snapshot();const tex=$("eqtex").value.trim();if(!tex)eqEl.remove();else{eqEl.dataset.tex=tex;paintMath(eqEl);}hasExample=false;closeEq();refit();};
+/* ---------- find and replace (like Ctrl+H in Google Docs) ---------- */
+let fHits=[], fIdx=-1;
+const hlOK=!!(window.CSS&&CSS.highlights&&window.Highlight);
+function fNodes(){ // question text only: not the printed heading, not inside formulas
+  const out=[], w=document.createTreeWalker($("doc"),NodeFilter.SHOW_TEXT,{acceptNode:n=>n.parentElement&&n.parentElement.closest(".hdr,.m,.eq,.bad,.mk.rbox")?2:1});
+  let n; while((n=w.nextNode())) out.push(n); return out;
+}
+function fScan(keep){
+  const q=$("findQ").value; fHits=[];
+  if(q) fNodes().forEach(n=>{let i=n.nodeValue.indexOf(q);while(i>=0){fHits.push({n,i});i=n.nodeValue.indexOf(q,i+q.length);}});
+  fIdx=fHits.length?Math.min(Math.max(keep?fIdx:0,0),fHits.length-1):-1;
+  fShow(false);
+}
+function fRange(h){const r=document.createRange();r.setStart(h.n,h.i);r.setEnd(h.n,h.i+$("findQ").value.length);return r;}
+function fMathCount(q){ if(!q||/[A-Za-z\\{}^_]/.test(q)) return 0; let c=0; $("doc").querySelectorAll("[data-tex]").forEach(el=>{if(!el.closest(".hdr"))c+=el.dataset.tex.split(q).length-1;}); return c; }
+function fShow(scroll){
+  const q=$("findQ").value, mc=fMathCount(q);
+  if(hlOK){ CSS.highlights.delete("fall"); CSS.highlights.delete("fcur");
+    if(fHits.length){ CSS.highlights.set("fall",new Highlight(...fHits.map(fRange))); if(fIdx>=0) CSS.highlights.set("fcur",new Highlight(fRange(fHits[fIdx]))); } }
+  $("findInfo").textContent=!q?"ওপরের ঘরে যা খুঁজবেন লিখুন।":fHits.length?`${bn(fHits.length)}টা পাওয়া গেছে · এখন ${bn(fIdx+1)} নম্বরটা দেখাচ্ছে`+(mc?` · সূত্রের মধ্যেও ${bn(mc)}টা আছে ("সব বদলান" সেগুলোও বদলাবে)`:"")
+    :mc?`লেখায় নেই, সূত্রের মধ্যে ${bn(mc)}টা আছে। "সব বদলান" চাপলে বদলাবে।`:"পাওয়া যায়নি।";
+  if(scroll&&fIdx>=0){ const el=fHits[fIdx].n.parentElement; if(el) el.scrollIntoView({block:"center",behavior:"smooth"}); }
+}
+function fClear(){ if(hlOK){CSS.highlights.delete("fall");CSS.highlights.delete("fcur");} fHits=[]; fIdx=-1; }
+$("findBtn").onclick=()=>{ const b=$("findbar"); if(!b.hidden){b.hidden=true;fClear();return;} b.hidden=false; $("findQ").focus(); fScan(); };
+$("findClose").onclick=()=>{ $("findbar").hidden=true; fClear(); };
+$("findQ").addEventListener("input",()=>fScan());
+$("findQ").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();$("findNext").click();}});
+$("findNext").onclick=()=>{ if(!fHits.length){fScan();} if(!fHits.length) return; fIdx=(fIdx+1)%fHits.length; fShow(true); };
+$("findPrev").onclick=()=>{ if(!fHits.length){fScan();} if(!fHits.length) return; fIdx=(fIdx-1+fHits.length)%fHits.length; fShow(true); };
+$("findOne").onclick=()=>{
+  if(needOwnPaper()) return; fScan(true); if(fIdx<0){setStatus("বদলানোর মতো কিছু পাওয়া যায়নি।",true);return;}
+  snapshot(); const h=fHits[fIdx], q=$("findQ").value; h.n.nodeValue=h.n.nodeValue.slice(0,h.i)+$("findR").value+h.n.nodeValue.slice(h.i+q.length);
+  hasExample=false; fScan(true); fShow(true); refitSoon();
+};
+$("findAll").onclick=()=>{
+  if(needOwnPaper()) return;
+  const q=$("findQ").value, rep=$("findR").value; if(!q){setStatus("আগে লিখুন কী খুঁজবেন।",true);return;}
+  fScan(); const mc=fMathCount(q); if(!fHits.length&&!mc){setStatus("পাওয়া যায়নি, কিছু বদলানো হল না।",true);return;}
+  snapshot(); let t=0;
+  fNodes().forEach(n=>{const parts=n.nodeValue.split(q); if(parts.length>1){t+=parts.length-1; n.nodeValue=parts.join(rep);}});
+  if(mc) $("doc").querySelectorAll("[data-tex]").forEach(el=>{ if(el.closest(".hdr")||!el.dataset.tex.includes(q)) return; el.dataset.tex=el.dataset.tex.split(q).join(rep); paintMath(el); });
+  hasExample=false; fScan(); refit();
+  const msg=`${bn(t+mc)}টা জায়গায় "${q}" বদলে ${rep?`"${rep}"`:"মুছে"} দেওয়া হল।`+(mc?` (এর মধ্যে সূত্রে ${bn(mc)}টা)`:"")+` ভুল হলে "↶ ফিরিয়ে আনুন" চাপুন।`;
+  $("findInfo").textContent=msg; setStatus(msg);
+};
+document.addEventListener("keydown",e=>{ if((e.ctrlKey||e.metaKey)&&(e.key==="h"||e.key==="f"||e.key==="H"||e.key==="F")&&!$("editPane").classList.contains("offscreen")){ e.preventDefault(); if($("findbar").hidden) $("findBtn").click(); else $("findQ").focus(); } });
 $("eqcancel").onclick=()=>{ if(eqNew&&eqEl){eqEl.remove();refit();} closeEq(); };
 /* ---------- maths symbol board ----------
    item: [button label, TeX, plain character for ordinary text (empty = it is a structure, opens as a formula)] */
