@@ -253,13 +253,13 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
       </div>
       <div class="step" id="gemstep">
         <h2><span>✦</span><b id="gemHead" style="font-weight:600">ছবি থেকে টাইপ: Gemini key (ফ্রি, ঐচ্ছিক)</b></h2>
-        <div class="row"><input id="gemkey" type="password" placeholder="AIza..." autocomplete="off" style="flex:1;min-width:0;font:inherit;font-size:.9rem;padding:8px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--fg)"><button class="btn" id="gemsave">রাখুন</button><button class="btn" id="gemdel" hidden>মুছুন</button></div>
+        <div class="row"><input id="gemkey" type="password" placeholder="AQ.… বা AIza…" autocomplete="off" style="flex:1;min-width:0;font:inherit;font-size:.9rem;padding:8px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--fg)"><button class="btn" id="gemsave">রাখুন</button><button class="btn" id="gemdel" hidden>মুছুন</button></div>
         <p class="small" id="gemnote" style="margin:6px 0 0">key দিলে খাতার ছবি দিয়ে "ছবি থেকে টাইপ করুন" চাপলেই এখানে টাইপ হবে। key না দিলেও অ্যাপ আগের মতো সব চলবে, তখন Gemini অ্যাপ থেকে পেস্ট করবেন।</p>
         <details style="margin-top:6px"><summary class="small" style="cursor:pointer;color:var(--accent);font-weight:600">key কীভাবে পাবেন (একবারই করতে হবে)</summary>
           <ol class="small" style="margin:6px 0 0;padding-left:1.2em;line-height:1.7">
             <li>Chrome-এ <b>aistudio.google.com</b> খুলুন, আপনার Google অ্যাকাউন্টে লগইন করুন।</li>
             <li>ওপরে বা বাঁ দিকে <b>"Get API key"</b> চাপুন, তারপর <b>"Create API key"</b>।</li>
-            <li><b>AIza</b> দিয়ে শুরু হওয়া লম্বা লেখাটা কপি করুন।</li>
+            <li><b>AQ.</b> (পুরোনো হলে <b>AIza</b>) দিয়ে শুরু হওয়া লম্বা লেখাটা কপি করুন।</li>
             <li>এখানে পেস্ট করে <b>"রাখুন"</b> চাপুন। key এই ফোনেই থাকে, আর কোথাও যায় না (শুধু ছবি পড়ার সময় Google-এর কাছে)।</li>
           </ol>
           <p class="small" style="margin:6px 0 0">মনে রাখবেন: Google ফ্রি ব্যবহারের একটা দৈনিক সীমা রাখে, যা তারা মাঝে মাঝে বদলায়। কিছু নতুন অ্যাকাউন্টে ফ্রি সীমা দেওয়া হয় না। ফ্রি ব্যবহারে পাঠানো লেখা Google তাদের পরিষেবা উন্নত করতে ব্যবহার করতে পারে, তাই পরীক্ষার আগে গোপন প্রশ্নের ক্ষেত্রে ভেবে নেবেন।</p>
@@ -22970,7 +22970,7 @@ function gemState(){
 $("gemkey").addEventListener("focus",()=>{if($("gemkey").dataset.saved){$("gemkey").value="";}});
 $("gemsave").onclick=()=>{const v=$("gemkey").value.trim();
   if(!v||v.endsWith("…")){gemState();return;}
-  if(!/^AIza[0-9A-Za-z_\-]{20,}$/.test(v)){setStatus("এটা Gemini key মনে হচ্ছে না। key শুরু হয় AIza দিয়ে, মাঝে ফাঁকা থাকে না।",true);return;}
+  if(!/^(AIza[0-9A-Za-z_\-]{20,}|AQ\.[0-9A-Za-z_\-.]{20,})$/.test(v)){setStatus("এটা Gemini key মনে হচ্ছে না। key শুরু হয় AQ. বা AIza দিয়ে, মাঝে ফাঁকা থাকে না।",true);return;}
   store.set("gemKey",v); store.set("gemModel",""); gemState(); setStatus("Gemini key রাখা হল। এবার খাতার ছবি দিয়ে \"ছবি থেকে টাইপ করুন\" চাপুন।");};
 $("gemdel").onclick=()=>{store.set("gemKey","");store.set("gemModel","");gemState();setStatus("Gemini key মোছা হল।");};
 gemState();
