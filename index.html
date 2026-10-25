@@ -22093,6 +22093,13 @@ function polish(){
   });
 }
 
+/* file name from the header: বিষয় ক্লাস শ্রেণি পরীক্ষা সাল, e.g. "ইতিহাস ক্লাস ষষ্ঠ তৃতীয় সামেটিভ 2026" */
+function fileBase(){
+  const cls=hv("hClass").replace(/^\s*(class|cl\.?|শ্রেণি|শ্রেণী|ক্লাস)\s*[:\-–.]?\s*/i,"").trim();
+  const parts=[hv("hSub"),cls?"ক্লাস "+cls:"",hv("hExam"),hv("hYear")].map(x=>String(x||"").trim()).filter(Boolean);
+  const s=parts.join(" ").replace(/[\\/:*?"<>|\n\r\t]+/g," ").replace(/\s+/g," ").trim().slice(0,120).trim();
+  return s||"prosnopotro";
+}
 /* ---------- paste from Gemini / anywhere ---------- */
 function cleanPasted(t){
   return t.replace(/\r/g,"")
@@ -22505,7 +22512,7 @@ $("pdf").onclick=async()=>{
       if(i) pdf.addPage("a4",land?"landscape":"portrait");
       pdf.addImage(cv.toDataURL("image/jpeg",0.93),"JPEG",0,0,land?297:210,land?210:297);
     }
-    const name=(hv("hSub")||"prosnopotro").replace(/[\\/:*?"<>|]/g,"")+".pdf";
+    const name=fileBase()+".pdf";
     await downloads.save({filename:name,data:pdf.output("blob")});
     setStatus(mode==="dup"?"PDF নামানো হয়েছে। ছেপে মাঝখান থেকে কাটুন।":land?"PDF নামানো হয়েছে। ছাপার সময় \"দুপিঠে, ছোট দিক বরাবর উল্টে\" বাছবেন।":"PDF নামানো হয়েছে।");
   }catch(e){ setStatus(saveErr(e,"PDF"),e?.code!=="declined"); }
@@ -22610,7 +22617,7 @@ $("docx").onclick=async()=>{
     const zip=await JSZip.loadAsync(await D.Packer.toBlob(doc));
     zip.file("word/document.xml",MathConv.fixXml(await zip.file("word/document.xml").async("string")));
     const blob=await zip.generateAsync({type:"blob"});
-    const name=(hv("hSub")||"prosnopotro").replace(/[\\/:*?"<>|]/g,"")+".docx";
+    const name=fileBase()+".docx";
     await downloads.save({filename:name,data:blob});
     setStatus(mode==="dup"?"ফাইল নামানো হয়েছে। প্রতি পাতার দুই ভাগে একই প্রশ্ন আছে। Google Drive-এ তুলে Google Docs দিয়ে খুলুন।":land?"ফাইল নামানো হয়েছে। Google Drive-এ আপলোড করে Google Docs দিয়ে খুলুন। পাতার ক্রম বুকলেটের মতোই আছে।":"ফাইল নামানো হয়েছে। Google Drive-এ আপলোড করে Google Docs দিয়ে খুলুন।");
   }catch(e){ setStatus(saveErr(e,"Word ফাইল"),e?.code!=="declined"); }
