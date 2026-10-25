@@ -184,6 +184,17 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 .symb .sg button.st{font-size:.92rem;background:var(--accent-soft);color:var(--accent);border-color:transparent}
 .symb .sg button:active{background:var(--accent);color:var(--accent-fg)}
 .doc .uln{text-decoration:underline;text-underline-offset:.15em}.doc .ovl{text-decoration:overline}.doc .uol{text-decoration:underline overline;text-underline-offset:.15em}
+/* PDF check before download */
+.pdfov{position:fixed;inset:0;z-index:80;background:rgba(10,16,14,.86);display:flex;flex-direction:column;padding:max(10px,env(safe-area-inset-top,0px)) max(10px,env(safe-area-inset-right,0px)) max(10px,env(safe-area-inset-bottom,0px)) max(10px,env(safe-area-inset-left,0px))}
+.pdfov .ptop{color:#fff;display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;justify-content:space-between;padding:4px 2px 8px}
+.pdfov .ptop b{font-size:1rem}.pdfov .ptop span{font-size:.84rem;opacity:.85;word-break:break-word}
+.pdfov .pscroll{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;background:#3a4440;border-radius:8px;padding:10px;touch-action:pan-x pan-y pinch-zoom}
+.pdfov .pscroll figure{margin:0 auto 14px;width:var(--pw,100%)}
+.pdfov .pscroll figcaption{color:#e8efec;font-size:.82rem;margin-bottom:4px}
+.pdfov .pscroll img{display:block;width:100%;height:auto;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.4)}
+.pdfov .pbot{display:flex;flex-wrap:wrap;gap:8px;padding-top:8px}
+.pdfov .pbot .btn{flex:1;min-width:140px;padding:11px}
+.pdfov .zoom{display:flex;gap:6px}.pdfov .zoom .btn{padding:5px 12px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head><body>
@@ -546,6 +557,12 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
   </div>
 </div>
 
+<div class="pdfov" id="pdfov" hidden role="dialog" aria-label="PDF দেখে নিন">
+  <div class="ptop"><div><b>নামানোর আগে দেখে নিন</b><br><span id="pdfInfo"></span></div>
+    <div class="zoom"><button class="btn" id="pdfZm" aria-label="ছোট করুন">－</button><button class="btn" id="pdfZp" aria-label="বড় করুন">＋</button></div></div>
+  <div class="pscroll" id="pdfPages"></div>
+  <div class="pbot"><button class="btn primary" id="pdfOk">✓ ঠিক আছে, ডাউনলোড করুন</button><button class="btn" id="pdfBack">✎ ফিরে গিয়ে ঠিক করুন</button></div>
+</div>
 <div class="cropov" id="crop" hidden>
   <div class="cropbox" role="dialog" aria-label="ছবির অংশ বাছুন">
     <b style="font-size:1rem">ছবির কোন অংশ বসাবেন?</b>
@@ -22622,21 +22639,46 @@ $("pdf").onclick=async()=>{
   const host=document.createElement("div"); host.style.cssText="position:fixed;left:-30000px;top:0;";
   document.body.appendChild(host);
   try{
-    const sheets=buildSheets(true), land=mode!=="a4";
+    const sheets=buildSheets(true), land=mode!=="a4", shots=[];
     const pdf=new window.jspdf.jsPDF({orientation:land?"landscape":"portrait",unit:"mm",format:"a4",compress:true});
     for(let i=0;i<sheets.length;i++){
       host.innerHTML=""; host.appendChild(sheets[i].el); sheets[i].el.style.position="static";
       setStatus(`PDF তৈরি হচ্ছে… ${bn(i+1)}/${bn(sheets.length)}`);
       const cv=await html2canvas(sheets[i].el,{scale:(window.innerWidth<700?2:2.5),backgroundColor:"#ffffff",logging:false});
       if(i) pdf.addPage("a4",land?"landscape":"portrait");
-      pdf.addImage(cv.toDataURL("image/jpeg",0.93),"JPEG",0,0,land?297:210,land?210:297);
+      const jpg=cv.toDataURL("image/jpeg",0.93); shots.push({cap:sheets[i].cap,src:jpg});
+      pdf.addImage(jpg,"JPEG",0,0,land?297:210,land?210:297);
     }
-    const name=fileBase()+".pdf";
-    await downloads.save({filename:name,data:pdf.output("blob")});
-    setStatus(mode==="dup"?"PDF নামানো হয়েছে। ছেপে মাঝখান থেকে কাটুন।":land?"PDF নামানো হয়েছে। ছাপার সময় \"দুপিঠে, ছোট দিক বরাবর উল্টে\" বাছবেন।":"PDF নামানো হয়েছে।");
+    const name=fileBase()+".pdf", blob=pdf.output("blob");
+    setStatus("PDF তৈরি। দেখে নিয়ে \"ঠিক আছে, ডাউনলোড করুন\" চাপুন।");
+    showPdfCheck(shots,name,blob,land);
   }catch(e){ setStatus(saveErr(e,"PDF"),e?.code!=="declined"); }
   finally{ host.remove(); $("pdf").disabled=false; $("pdf").textContent="PDF নামান (ছাপার জন্য)"; }
 };
+
+/* the exact pages that go into the PDF, shown before saving */
+let pdfZoom=100;
+function showPdfCheck(shots,name,blob,land){
+  const ov=$("pdfov");
+  $("pdfInfo").textContent=`${bn(shots.length)}টা পাতা · ফাইলের নাম: ${name}`;
+  $("pdfPages").innerHTML=shots.map(s=>`<figure><figcaption>${s.cap}</figcaption><img alt="${esc(String(s.cap).replace(/<[^>]*>/g,""))}" src="${s.src}"></figure>`).join("");
+  pdfZoom=100; $("pdfPages").style.setProperty("--pw","100%"); $("pdfPages").scrollTop=0;
+  ov.hidden=false; document.body.style.overflow="hidden";
+  const close=()=>{ov.hidden=true;document.body.style.overflow="";$("pdfPages").innerHTML="";};
+  $("pdfBack").onclick=()=>{close();showTab("edit");setStatus("PDF নামানো হয়নি। ঠিক করে আবার \"PDF নামান\" চাপুন।");};
+  $("pdfOk").onclick=async()=>{
+    $("pdfOk").disabled=true;
+    try{
+      await downloads.save({filename:name,data:blob});
+      close();
+      setStatus(mode==="dup"?"PDF নামানো হয়েছে। ছেপে মাঝখান থেকে কাটুন।":land?"PDF নামানো হয়েছে। ছাপার সময় \"দুপিঠে, ছোট দিক বরাবর উল্টে\" বাছবেন।":"PDF নামানো হয়েছে।");
+    }catch(e){ setStatus(saveErr(e,"PDF"),e?.code!=="declined"); }
+    finally{ $("pdfOk").disabled=false; }
+  };
+}
+$("pdfZp").onclick=()=>{pdfZoom=Math.min(300,pdfZoom+50);$("pdfPages").style.setProperty("--pw",pdfZoom+"%");};
+$("pdfZm").onclick=()=>{pdfZoom=Math.max(50,pdfZoom-50);$("pdfPages").style.setProperty("--pw",pdfZoom+"%");};
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("pdfov").hidden)$("pdfBack").click();});
 
 /* ---------- copy (plain) ---------- */
 $("copy").onclick=async()=>{
