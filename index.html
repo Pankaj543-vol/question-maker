@@ -174,6 +174,15 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 .cmdplan{background:var(--accent-soft);border-radius:8px;padding:8px 10px;font-size:.88rem;display:flex;flex-direction:column;gap:6px}
 .examples{margin:6px 0 0;padding-left:1.1em;font-size:.8rem;color:var(--muted)}
 .edtools{display:flex;flex-wrap:wrap;gap:6px}
+/* maths symbol board */
+.symb{background:var(--panel);border:1px solid var(--accent);border-radius:10px;padding:8px 10px 10px;margin:6px 0 8px;max-height:52vh;overflow:auto;-webkit-overflow-scrolling:touch}
+.symb .shead{display:flex;justify-content:space-between;align-items:center;gap:8px;position:sticky;top:-8px;background:var(--panel);padding:4px 0 6px;z-index:1}
+.symb .shead b{font-size:.92rem}
+.symb h4{margin:8px 0 4px;font-size:.8rem;color:var(--muted);font-weight:600}
+.symb .sg{display:flex;flex-wrap:wrap;gap:4px}
+.symb .sg button{min-width:40px;height:38px;padding:0 7px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--fg);font:500 1.02rem "Noto Serif Bengali","Cambria Math","STIX Two Math",serif;cursor:pointer;touch-action:manipulation}
+.symb .sg button.st{font-size:.92rem;background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.symb .sg button:active{background:var(--accent);color:var(--accent-fg)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head><body>
@@ -425,6 +434,8 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
           <button class="btn primary" id="eqok" style="width:auto">ঠিক আছে</button>
           <button class="btn" id="eqcancel">বাতিল</button>
           <button class="btn" id="eqdel">সূত্রটা মুছুন</button>
+          <button class="btn" id="eqNext" title="পরের ফাঁকা ঘরে যান">পরের ঘর ➜</button>
+          <button class="btn" id="eqSym">∑ অংকের চিহ্ন</button>
         </div>
         <p class="small" style="margin:0">ছোট নিয়ম: ভগ্নাংশ <code>\frac{ওপর}{নিচ}</code>, বর্গমূল <code>\sqrt{x}</code>, ঘাত <code>x^{2}</code>, নিচে ছোট <code>H_{2}</code>, θ = <code>\theta</code>, π = <code>\pi</code></p>
       </div>
@@ -493,8 +504,10 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
           <select id="lineN" aria-label="কটা দাগ"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option><option>8</option><option>10</option></select>
           <button class="btn" id="linesBtn">≡ উত্তর লেখার দাগ</button>
           <button class="btn" id="boxBtn">☐ বক্স</button>
+          <button class="btn" id="symBtn">∑ অংকের চিহ্ন</button>
           <button class="btn" id="rboxBtn">☐ লাইনের শেষে ডানদিকে বক্স</button>
         </div>
+        <div class="symb" id="symboard" hidden></div>
         <p class="small" style="margin:0 0 6px">দাগ আর বক্স বসে লেখার যেখানে শেষবার ট্যাপ করেছেন সেখানে। টেবিল আর উত্তরের দাগ বসে সেই লাইনের নিচে।</p>
         <div class="eqedit" id="tblNew" hidden>
           <div class="row">
@@ -22350,7 +22363,9 @@ $("tEdit").onclick=()=>showTab("edit"); $("tView").onclick=()=>showTab("view");
 /* ---------- formula and drawing editors ---------- */
 let eqEl=null, figEl=null;
 function openEq(el){closeEq();closeFig();eqEl=el;el.classList.add("sel");$("eqtex").value=el.dataset.tex;previewEq();$("eqedit").hidden=false;$("eqtex").focus();}
-function closeEq(){if(eqEl)eqEl.classList.remove("sel");eqEl=null;$("eqedit").hidden=true;}
+let eqNew=false, symBack=false;
+function closeEq(){eqNew=false;
+  const sb=$("symboard"); if(sb&&$("eqedit").contains(sb)){ if(symBack) symShow(false); else sb.hidden=true; } symBack=false;if(eqEl)eqEl.classList.remove("sel");eqEl=null;$("eqedit").hidden=true;}
 function previewEq(){
   const p=$("eqprev"), tex=$("eqtex").value.trim();
   if(!mjReady()){p.textContent=tex;return;}
@@ -22358,7 +22373,85 @@ function previewEq(){
 }
 $("eqtex").addEventListener("input",previewEq);
 $("eqok").onclick=()=>{if(!eqEl)return;snapshot();const tex=$("eqtex").value.trim();if(!tex)eqEl.remove();else{eqEl.dataset.tex=tex;paintMath(eqEl);}hasExample=false;closeEq();refit();};
-$("eqcancel").onclick=closeEq;
+$("eqcancel").onclick=()=>{ if(eqNew&&eqEl){eqEl.remove();refit();} closeEq(); };
+/* ---------- maths symbol board ----------
+   item: [button label, TeX, plain character for ordinary text (empty = it is a structure, opens as a formula)] */
+const SYMS=[
+ ["সাধারণ চিহ্ন",[["+","+","+"],["−","-","−"],["×","\\times ","×"],["÷","\\div ","÷"],["=","=","="],["≠","\\neq ","≠"],["±","\\pm ","±"],["∓","\\mp ","∓"],["<","<","<"],[">",">",">"],["≤","\\leq ","≤"],["≥","\\geq ","≥"],["≈","\\approx ","≈"],["≡","\\equiv ","≡"],["∝","\\propto ","∝"],["∞","\\infty ","∞"],["%","\\%","%"],["°","^{\\circ}","°"],["·","\\cdot ","·"],["!","!","!"],["( )","\\left( {} \\right)",""],["[ ]","\\left[ {} \\right]",""],["{ }","\\left\\{ {} \\right\\}",""],[":",":",":"],["∷","::","∷"]]],
+ ["ভগ্নাংশ ও মূল",[["ক⁄খ","\\frac{}{}",""],["ক খ⁄গ  মিশ্র","{}\\frac{}{}",""],["√","\\sqrt{}",""],["∛","\\sqrt[3]{}",""],["ⁿ√","\\sqrt[]{}",""],["½","\\frac{1}{2}","½"],["¼","\\frac{1}{4}","¼"],["¾","\\frac{3}{4}","¾"],["ক:খ","{}:{}",""]]],
+ ["ঘাত ও নিচে ছোট",[["x²","^{2}","²"],["x³","^{3}","³"],["xⁿ","^{}",""],["x₂","_{}",""],["xₐᵇ","_{}^{}",""],["eˣ","e^{}",""],["10ⁿ","10^{}",""],["x⁻¹","^{-1}","⁻¹"],["′","^{\\prime}","′"]]],
+ ["বীজগণিত",[["|x|","\\left| {} \\right|",""],["x̄","\\bar{}",""],["f(x)","f(x)",""],["≢","\\not\\equiv ","≢"],["⇒","\\Rightarrow ","⇒"],["⇔","\\Leftrightarrow ","⇔"],["a+bi","{}+{}i",""]]],
+ ["জ্যামিতি",[["∠","\\angle ","∠"],["△","\\triangle ","△"],["⊥","\\perp ","⊥"],["∥","\\parallel ","∥"],["≅","\\cong ","≅"],["∼","\\sim ","∼"],["π","\\pi ","π"],["°","^{\\circ}","°"],["AB̅ রেখাংশ","\\overline{}",""],["AB→ রশ্মি","\\overrightarrow{}",""],["AB↔ সরলরেখা","\\overleftrightarrow{}",""],["⌒ চাপ","\\overset{\\frown}{}",""],["□","\\square ","□"],["○","\\bigcirc ","○"],["⊙","\\odot ","⊙"]]],
+ ["গ্রিক অক্ষর",[["α","\\alpha ","α"],["β","\\beta ","β"],["γ","\\gamma ","γ"],["δ","\\delta ","δ"],["ε","\\epsilon ","ε"],["θ","\\theta ","θ"],["λ","\\lambda ","λ"],["μ","\\mu ","μ"],["π","\\pi ","π"],["ρ","\\rho ","ρ"],["σ","\\sigma ","σ"],["τ","\\tau ","τ"],["φ","\\phi ","φ"],["ω","\\omega ","ω"],["Δ","\\Delta ","Δ"],["Σ","\\Sigma ","Σ"],["Ω","\\Omega ","Ω"],["Φ","\\Phi ","Φ"],["Π","\\Pi ","Π"],["Θ","\\Theta ","Θ"]]],
+ ["সেট",[["∈","\\in ","∈"],["∉","\\notin ","∉"],["⊂","\\subset ","⊂"],["⊆","\\subseteq ","⊆"],["⊃","\\supset ","⊃"],["∪","\\cup ","∪"],["∩","\\cap ","∩"],["∅","\\emptyset ","∅"],["A′","{}^{\\prime}",""],["ℕ","\\mathbb{N}","ℕ"],["ℤ","\\mathbb{Z}","ℤ"],["ℚ","\\mathbb{Q}","ℚ"],["ℝ","\\mathbb{R}","ℝ"],["ℂ","\\mathbb{C}","ℂ"],["∀","\\forall ","∀"],["∃","\\exists ","∃"],["{x | }","\\{x \\mid {}\\}",""]]],
+ ["ত্রিকোণমিতি ও লগ",[["sin","\\sin ","sin"],["cos","\\cos ","cos"],["tan","\\tan ","tan"],["cot","\\cot ","cot"],["sec","\\sec ","sec"],["cosec","\\operatorname{cosec} ","cosec"],["sin²","\\sin^{2}",""],["sin⁻¹","\\sin^{-1}",""],["log","\\log ","log"],["logₐ","\\log_{}",""],["ln","\\ln ","ln"]]],
+ ["ক্যালকুলাস ও উচ্চতর",[["lim","\\lim_{x \\to {}}",""],["d⁄dx","\\frac{d}{dx}",""],["dy⁄dx","\\frac{dy}{dx}",""],["∫","\\int ",""],["∫ₐᵇ","\\int_{}^{}",""],["∑","\\sum_{}^{}",""],["∏","\\prod_{}^{}",""],["∂","\\partial ","∂"],["→","\\to ","→"],["v⃗ ভেক্টর","\\vec{}",""],["ⁿCᵣ","{}^{}C_{}",""],["ⁿPᵣ","{}^{}P_{}",""],["n!","{}!",""]]],
+ ["যুক্তি ও তীর",[["∴ অতএব","\\therefore ","∴"],["∵ যেহেতু","\\because ","∵"],["⇒","\\Rightarrow ","⇒"],["⇔","\\Leftrightarrow ","⇔"],["→","\\rightarrow ","→"],["←","\\leftarrow ","←"],["↔","\\leftrightarrow ","↔"],["↑","\\uparrow ","↑"],["↓","\\downarrow ","↓"]]],
+ ["রসায়ন",[["→","\\rightarrow ","→"],["⇌","\\rightleftharpoons ","⇌"],["↑ গ্যাস","\\uparrow ","↑"],["↓ অধঃক্ষেপ","\\downarrow ","↓"],["—Δ→","\\xrightarrow{\\Delta}",""],["H₂O","\\mathrm{H_{2}O}",""],["X₂","\\mathrm{}_{}",""],["আয়ন ⁺","^{+}","⁺"],["আয়ন ²⁻","^{2-}",""]]],
+ ["সাজানো (ম্যাট্রিক্স, সমীকরণ জোট)",[["[২×২]","\\begin{bmatrix} {} & {} \\\\ {} & {} \\end{bmatrix}",""],["[৩×৩]","\\begin{bmatrix} {} & {} & {} \\\\ {} & {} & {} \\\\ {} & {} & {} \\end{bmatrix}",""],["|২×২|","\\begin{vmatrix} {} & {} \\\\ {} & {} \\end{vmatrix}",""],["{ জোট","\\begin{cases} {} \\\\ {} \\end{cases}",""]]]
+];
+(function buildSym(){
+  const b=$("symboard"); let h='<div class="shead"><b>অংকের চিহ্ন</b><button class="btn" id="symClose" style="padding:5px 10px">✕ বন্ধ</button></div>'+
+    '<p class="small" id="symHint" style="margin:0"></p>';
+  SYMS.forEach(([name,items],g)=>{h+=`<h4>${name}</h4><div class="sg">`+items.map(([l,,u],i)=>`<button type="button" data-g="${g}" data-i="${i}"${u?"":' class="st"'} title="${esc(l)}">${esc(l)}</button>`).join("")+"</div>";});
+  b.innerHTML=h;
+  // keep the cursor where it is: buttons never take the focus
+  b.addEventListener("pointerdown",e=>{if(e.target.closest("button"))e.preventDefault();});
+  b.addEventListener("mousedown",e=>{if(e.target.closest("button"))e.preventDefault();});
+  b.addEventListener("click",e=>{const btn=e.target.closest("button[data-g]"); if(!btn) return; symPut(SYMS[btn.dataset.g][1][btn.dataset.i]);});
+  $("symClose").onclick=()=>{b.hidden=true;};
+})();
+const symInEq=()=>!$("eqedit").hidden&&$("eqedit").contains($("symboard"));
+function symShow(inEq){
+  const b=$("symboard");
+  if(inEq) $("eqedit").appendChild(b); else $("tblNew").before(b);
+  $("symHint").textContent=inEq?"যে চিহ্নে চাপবেন, সূত্রের ঘরে যেখানে আঙুল (কার্সার) আছে সেখানে বসবে। ফাঁকা ঘর ভরতে \"পরের ঘর ➜\" চাপুন।"
+    :"আগে লেখার যেখানে চিহ্ন চান সেখানে ট্যাপ করুন, তারপর চিহ্নে চাপুন। ভগ্নাংশ, মূল, ঘাতের মতো কাঠামো চাপলে নতুন সূত্র বসবে আর তার ঘর খুলবে।";
+  b.hidden=false;
+}
+$("symBtn").onclick=()=>{ const b=$("symboard"); if(!b.hidden&&!$("eqedit").contains(b)){b.hidden=true;return;} symShow(false); };
+$("eqSym").onclick=()=>{ const b=$("symboard"); if(!b.hidden&&$("eqedit").contains(b)){b.hidden=true;return;} symShow(true); $("eqtex").focus(); };
+function eqTo(pos){const t=$("eqtex");t.focus();t.setSelectionRange(pos,pos);}
+function eqInsert(tex){
+  const t=$("eqtex"), s=t.selectionStart??t.value.length, e=t.selectionEnd??s;
+  const before=t.value.slice(0,s), after=t.value.slice(e);
+  // a plain symbol right after a letter-command needs a space, e.g. "\pi" then "2"
+  t.value=before+tex+after;
+  const hole=tex.indexOf("{}"); eqTo(hole>=0?s+hole+1:s+tex.length);
+  previewEq();
+}
+$("eqNext").onclick=()=>{ // jump to the next empty box {} (or just after the next closing brace)
+  const t=$("eqtex"), v=t.value, from=(t.selectionEnd??0);
+  let k=v.indexOf("{}",from); if(k===from-1) k=v.indexOf("{}",from+1);
+  if(k>=0){eqTo(k+1);return;}
+  k=v.indexOf("}",from); if(k>=0){eqTo(k+1);return;}
+  k=v.indexOf("{}"); if(k>=0) eqTo(k+1); else eqTo(v.length);
+};
+$("eqNext").addEventListener("pointerdown",e=>e.preventDefault());
+function insertText(txt){ // a plain character straight into the question text, at the cursor
+  if(needOwnPaper()) return;
+  let r=lastRange&&$("doc").contains(lastRange.startContainer)?lastRange.cloneRange():null;
+  if(!r){ if(lastBlock&&lastBlock.isConnected&&/^(P|H2|H3)$/.test(lastBlock.tagName)){r=document.createRange();r.selectNodeContents(lastBlock);r.collapse(false);}
+    else {setStatus("আগে লেখার যেখানে চিহ্ন বসাতে চান সেখানে একবার ট্যাপ করুন।",true);return;} }
+  let n=r.startContainer.nodeType===1?r.startContainer:r.startContainer.parentElement;
+  const lock=n&&n.closest&&n.closest('#doc [contenteditable="false"]');
+  if(lock){ if(lock.classList.contains("hdr")||lock.classList.contains("wlines")||lock.tagName==="FIGURE"){setStatus("এখানে বসানো যায় না। প্রশ্নের লেখার মধ্যে ট্যাপ করুন।",true);return;} r.setStartAfter(lock); r.collapse(true); }
+  snapshot(); r.deleteContents();
+  const tn=document.createTextNode(txt); r.insertNode(tn);
+  const after=document.createRange(); after.setStartAfter(tn); after.collapse(true); lastRange=after;
+  try{const sel=getSelection(); if($("doc").contains(document.activeElement)||document.activeElement===$("doc")){sel.removeAllRanges();sel.addRange(after);}}catch{}
+  hasExample=false; refitSoon();
+}
+function symPut([label,tex,uni]){
+  if(symInEq()){ eqInsert(tex); return; }
+  if(uni){ insertText(uni); return; }
+  // a structure: put a new formula at the cursor and open it for filling in
+  insertInline(mathHTML(tex,false).replace('class="m"','class="m" data-new="1"'));
+  const m=$("doc").querySelector('[data-new="1"]'); if(!m) return;
+  m.removeAttribute("data-new"); paintMath(m); openEq(m); eqNew=true;
+  const hole=tex.indexOf("{}"); eqTo(hole>=0?hole+1:tex.length);
+  symShow(true); symBack=true;
+}
 $("eqdel").onclick=()=>{if(eqEl){snapshot();eqEl.remove();}closeEq();refit();};
 function openFig(el){closeEq();closeFig();closePick();figEl=el;figLayout(el);el.classList.add("sel");$("figedit").hidden=false;$("forig").hidden=!el.dataset.orig;keepAbovePanel(el,$("figedit"));
   const crop=!!el.dataset.box;["fmore","fless","fup","fdown","fleft","fright"].forEach(id=>$(id).hidden=!crop);}
