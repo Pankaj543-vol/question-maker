@@ -22110,6 +22110,16 @@ const TEXSYM={"%":"%",times:"×",div:"÷",pm:"±",mp:"∓",le:"≤",leq:"≤",ge
   angle:"∠",triangle:"△",rightarrow:"→",to:"→",Rightarrow:"⇒",leftrightarrow:"↔",cdots:"⋯",ldots:"…",dots:"…",
   perp:"⊥",parallel:"∥",cong:"≅",sim:"∼",square:"□",quad:" ",qquad:"  ",",":" ",";":" ","!":""};
 let texBlock=false;
+function fixBareInDoc(){ // finds raw TeX left as plain text on the page and draws it as maths
+  const doc=$("doc"); if(!doc) return 0;
+  const w=document.createTreeWalker(doc,NodeFilter.SHOW_TEXT,{acceptNode:n=>n.parentElement&&n.parentElement.closest(".m,.eq,.hdr,.bad")?2:1});
+  const list=[]; let n; while((n=w.nextNode())) if(/\\(%|[a-zA-Z]{2,})/.test(n.nodeValue)) list.push(n);
+  let k=0;
+  list.forEach(n=>{ const t=barePart(n.nodeValue); if(t===n.nodeValue) return;
+    const tmp=document.createElement("span"); tmp.innerHTML=inlineHTML(t);
+    tmp.querySelectorAll("[data-tex]").forEach(paintMath); n.replaceWith(...tmp.childNodes); k++; });
+  return k;
+}
 function bareTexLine(line){
   const tl=line.trim();
   if(texBlock){if(/\$\$|\\\]/.test(tl))texBlock=false;return line;}
@@ -22185,6 +22195,7 @@ $("pasteGo").onclick=()=>{
   clearExample(); showTab("edit");
   const imgId=images.length?images[images.length-1].id:null;
   snapshot(); insertHTML(null,textToHTML(autoStructure(cleanPasted(t)),null,imgId)); polish();
+  fixBareInDoc();
   $("pastebox").value=""; lastLen=0;
   if($("autosort").checked) sortQuestions(true);
   refit();
@@ -22679,6 +22690,7 @@ function applyPaper(meta,body){
   const h=body.hdr||{}; HF.forEach(id=>{ if(h[id]!==undefined){ $(id).value=h[id]; store.set(id,h[id]); } });
   sampleHeader=false;
   closePick(); $("doc").innerHTML=body.html||"<p><br></p>"; hasExample=false;
+  fixBareInDoc(); // papers saved before the maths fix: turn leftover \frac, \times … into real maths
   $("doc").querySelectorAll("figure.fi").forEach(figLayout); $("doc").querySelectorAll(".lab.sel,.pick,.placing").forEach(x=>x.classList.remove("sel","pick","placing"));
   hist=[]; fut=[]; updUndo(); lastBlock=null; lastRange=null;
   curId=meta.id; store.set("curPaper",curId); $("papName").value=meta.name||"";
