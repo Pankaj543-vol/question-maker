@@ -183,6 +183,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 .symb .sg button{min-width:40px;height:38px;padding:0 7px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--fg);font:500 1.02rem "Noto Serif Bengali","Cambria Math","STIX Two Math",serif;cursor:pointer;touch-action:manipulation}
 .symb .sg button.st{font-size:.92rem;background:var(--accent-soft);color:var(--accent);border-color:transparent}
 .symb .sg button:active{background:var(--accent);color:var(--accent-fg)}
+.doc .uln{text-decoration:underline;text-underline-offset:.15em}.doc .ovl{text-decoration:overline}.doc .uol{text-decoration:underline overline;text-underline-offset:.15em}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head><body>
@@ -21160,6 +21161,7 @@ const MathConv=(()=>{
   const NARY=/^[∫∬∭∮∑∏]$/;
   const ACC={"→":"⃗","⃗":"⃗","¯":"̅","‾":"̅","_":"̅","^":"̂","ˆ":"̂","˙":"̇",".":"̇","~":"̃","˜":"̃"};
   const REL=/^[=<>≤≥≈≠≡∝→⟶⇌,]$/;
+  const BAR=/^[―¯‾_]$/, comb=(s,c)=>{const a=[...s];return a.map((ch,i)=>ch.trim()&&!/\p{M}/u.test(ch)?ch+(a.slice(i+1).join("").match(/^\p{M}*/u)[0]?"":c):(/\p{M}/u.test(ch)&&!/\p{M}/u.test(a[i+1]||"")?ch+c:ch)).join("");}; // over/under line on every letter
   function nary(n){
     const t=nm(n),k=kids(n);
     if(["msub","msup","msubsup","munder","mover","munderover"].includes(t)&&k[0]){
@@ -21226,9 +21228,9 @@ const MathConv=(()=>{
         case "msqrt": return [new D.MathRadical({children:seq(k)})];
         case "mroot": return [new D.MathRadical({children:one(k[0]),degree:one(k[1])})];
         case "msup":case "msub":case "msubsup": return [build(t,one(k[0]),one(k[1]),k[2]?one(k[2]):undefined)];
-        case "mover":{const a=txt(k[1]).trim(); if(ACC[a]) return R(txt(k[0])+ACC[a]);
+        case "mover":{const a=txt(k[1]).trim(); if(BAR.test(a)) return R(comb(linear(k[0]),"\u0305")); if(ACC[a]) return R(txt(k[0])+ACC[a]);
           return [new D.MathSuperScript({children:one(k[0]),superScript:one(k[1])})];}
-        case "munder": return [new D.MathSubScript({children:one(k[0]),subScript:one(k[1])})];
+        case "munder":{if(BAR.test(txt(k[1]).trim())) return R(comb(linear(k[0]),"\u0332")); return [new D.MathSubScript({children:one(k[0]),subScript:one(k[1])})];}
         case "munderover": return [new D.MathSubSuperScript({children:one(k[0]),subScript:one(k[1]),superScript:one(k[2])})];
         case "mtable": return R(linear(n));
         default: return seq(k);
@@ -21257,8 +21259,8 @@ const MathConv=(()=>{
       case "msup":{const s=L(k[1]);return L(k[0])+(map(s,SUP)||"^"+wrap(s));}
       case "msub":{const s=L(k[1]);return L(k[0])+(map(s,SUB)||"_"+wrap(s));}
       case "msubsup":{const a=L(k[1]),b=L(k[2]);return L(k[0])+(map(a,SUB)||"_"+wrap(a))+(map(b,SUP)||"^"+wrap(b));}
-      case "mover":{const a=txt(k[1]).trim();if(ACC[a])return L(k[0])+ACC[a];const s=L(k[1]);return L(k[0])+(map(s,SUP)||"^"+wrap(s));}
-      case "munder":{const s=L(k[1]);return L(k[0])+(map(s,SUB)||"_"+wrap(s))+" ";}
+      case "mover":{const a=txt(k[1]).trim();if(BAR.test(a))return comb(L(k[0]),"\u0305");if(ACC[a])return L(k[0])+ACC[a];const s=L(k[1]);return L(k[0])+(map(s,SUP)||"^"+wrap(s));}
+      case "munder":{if(BAR.test(txt(k[1]).trim()))return comb(L(k[0]),"\u0332");const s=L(k[1]);return L(k[0])+(map(s,SUB)||"_"+wrap(s))+" ";}
       case "munderover":{const a=L(k[1]),b=L(k[2]);return L(k[0])+(map(a,SUB)||"_"+wrap(a))+(map(b,SUP)||"^"+wrap(b))+" ";}
       case "mtable": return "["+k.map(r=>kids(r).map(linear).join(", ")).join("; ")+"]";
       case "mtd":case "mtr": return k.map(linear).join(" ");
@@ -22380,6 +22382,7 @@ const SYMS=[
  ["সাধারণ চিহ্ন",[["+","+","+"],["−","-","−"],["×","\\times ","×"],["÷","\\div ","÷"],["=","=","="],["≠","\\neq ","≠"],["±","\\pm ","±"],["∓","\\mp ","∓"],["<","<","<"],[">",">",">"],["≤","\\leq ","≤"],["≥","\\geq ","≥"],["≈","\\approx ","≈"],["≡","\\equiv ","≡"],["∝","\\propto ","∝"],["∞","\\infty ","∞"],["%","\\%","%"],["°","^{\\circ}","°"],["·","\\cdot ","·"],["!","!","!"],["( )","\\left( {} \\right)",""],["[ ]","\\left[ {} \\right]",""],["{ }","\\left\\{ {} \\right\\}",""],[":",":",":"],["∷","::","∷"]]],
  ["ভগ্নাংশ ও মূল",[["ক⁄খ","\\frac{}{}",""],["ক খ⁄গ  মিশ্র","{}\\frac{}{}",""],["√","\\sqrt{}",""],["∛","\\sqrt[3]{}",""],["ⁿ√","\\sqrt[]{}",""],["½","\\frac{1}{2}","½"],["¼","\\frac{1}{4}","¼"],["¾","\\frac{3}{4}","¾"],["ক:খ","{}:{}",""]]],
  ["ঘাত ও নিচে ছোট",[["x²","^{2}","²"],["x³","^{3}","³"],["xⁿ","^{}",""],["x₂","_{}",""],["xₐᵇ","_{}^{}",""],["eˣ","e^{}",""],["10ⁿ","10^{}",""],["x⁻¹","^{-1}","⁻¹"],["′","^{\\prime}","′"]]],
+ ["দাগ: অক্ষরের নিচে / ওপরে (আগে লেখা বেছে নিলে সেটাতেই দাগ পড়বে)",[["A̲B̲  নিচে দাগ","\\underline{}",""],["A̅B̅  ওপরে দাগ","\\overline{}",""],["A̲̅B̲̅  ওপরে-নিচে দুটোই","\\overline{\\underline{}}",""]]],
  ["বীজগণিত",[["|x|","\\left| {} \\right|",""],["x̄","\\bar{}",""],["f(x)","f(x)",""],["≢","\\not\\equiv ","≢"],["⇒","\\Rightarrow ","⇒"],["⇔","\\Leftrightarrow ","⇔"],["a+bi","{}+{}i",""]]],
  ["জ্যামিতি",[["∠","\\angle ","∠"],["△","\\triangle ","△"],["⊥","\\perp ","⊥"],["∥","\\parallel ","∥"],["≅","\\cong ","≅"],["∼","\\sim ","∼"],["π","\\pi ","π"],["°","^{\\circ}","°"],["AB̅ রেখাংশ","\\overline{}",""],["AB→ রশ্মি","\\overrightarrow{}",""],["AB↔ সরলরেখা","\\overleftrightarrow{}",""],["⌒ চাপ","\\overset{\\frown}{}",""],["□","\\square ","□"],["○","\\bigcirc ","○"],["⊙","\\odot ","⊙"]]],
  ["গ্রিক অক্ষর",[["α","\\alpha ","α"],["β","\\beta ","β"],["γ","\\gamma ","γ"],["δ","\\delta ","δ"],["ε","\\epsilon ","ε"],["θ","\\theta ","θ"],["λ","\\lambda ","λ"],["μ","\\mu ","μ"],["π","\\pi ","π"],["ρ","\\rho ","ρ"],["σ","\\sigma ","σ"],["τ","\\tau ","τ"],["φ","\\phi ","φ"],["ω","\\omega ","ω"],["Δ","\\Delta ","Δ"],["Σ","\\Sigma ","Σ"],["Ω","\\Omega ","Ω"],["Φ","\\Phi ","Φ"],["Π","\\Pi ","Π"],["Θ","\\Theta ","Θ"]]],
@@ -22414,7 +22417,8 @@ $("eqSym").onclick=()=>{ const b=$("symboard"); if(!b.hidden&&$("eqedit").contai
 function eqTo(pos){const t=$("eqtex");t.focus();t.setSelectionRange(pos,pos);}
 function eqInsert(tex){
   const t=$("eqtex"), s=t.selectionStart??t.value.length, e=t.selectionEnd??s;
-  const before=t.value.slice(0,s), after=t.value.slice(e);
+  const before=t.value.slice(0,s), after=t.value.slice(e), picked=t.value.slice(s,e);
+  if(picked&&tex.includes("{}")){ tex=tex.replace("{}","{"+picked+"}"); t.value=before+tex+after; const h=tex.indexOf("{}"); eqTo(h>=0?s+h+1:s+tex.length); previewEq(); return; }
   // a plain symbol right after a letter-command needs a space, e.g. "\pi" then "2"
   t.value=before+tex+after;
   const hole=tex.indexOf("{}"); eqTo(hole>=0?s+hole+1:s+tex.length);
@@ -22445,6 +22449,28 @@ function insertText(txt){ // a plain character straight into the question text, 
 function symPut([label,tex,uni]){
   if(symInEq()){ eqInsert(tex); return; }
   if(uni){ insertText(uni); return; }
+  // words chosen in the text + a structure: the words go inside it (e.g. underline a word)
+  const r=lastRange&&!lastRange.collapsed&&$("doc").contains(lastRange.commonAncestorContainer)?lastRange.cloneRange():null;
+  const words=r?r.toString().replace(/\u200B/g,"").trim():"";
+  const LINECLS={"\\underline{}":"uln","\\overline{}":"ovl","\\overline{\\underline{}}":"uol"}[tex];
+  if(words&&LINECLS&&!r.cloneContents().querySelector('[contenteditable="false"],p,h2,h3,table')&&!needOwnPaper()){
+    // ordinary words (Bengali too) keep their own font; only the line is added
+    snapshot(); r.deleteContents(); r.collapse(true);
+    const sp=document.createElement("span"); sp.className=LINECLS; sp.textContent=words; r.insertNode(sp);
+    const after=document.createRange(); after.setStartAfter(sp); after.collapse(true); lastRange=after;
+    try{const s=getSelection();s.removeAllRanges();s.addRange(after);}catch{}
+    hasExample=false; refitSoon(); return;
+  }
+  if(words&&tex.includes("{}")&&!r.cloneContents().querySelector('[contenteditable="false"],p,h2,h3,table')&&!needOwnPaper()){
+    const fill=/^[A-Za-z0-9+\-=().,]+$/.test(words)?words:"\\text{"+words.replace(/([#$%&_{}])/g,"\\$1").replace(/[\\^~]/g,"")+"}";
+    const t2=tex.replace("{}","{"+fill+"}");
+    snapshot(); r.deleteContents(); r.collapse(true); lastRange=r;
+    insertInline(mathHTML(t2,false).replace('class="m"','class="m" data-new="1"'));
+    const m=$("doc").querySelector('[data-new="1"]'); if(!m) return;
+    m.removeAttribute("data-new"); paintMath(m);
+    if(t2.includes("{}")){ openEq(m); const h=t2.indexOf("{}"); eqTo(h+1); symShow(true); symBack=true; }
+    return;
+  }
   // a structure: put a new formula at the cursor and open it for filling in
   insertInline(mathHTML(tex,false).replace('class="m"','class="m" data-new="1"'));
   const m=$("doc").querySelector('[data-new="1"]'); if(!m) return;
@@ -22552,14 +22578,14 @@ async function flattenFigs(){
   }
 }
 function blockOf(el){
-  const walk=(n,b,runs)=>{n.childNodes.forEach(c=>{
-    if(c.nodeType===3){if(c.textContent)runs.push({text:c.textContent,bold:b});}
+  const walk=(n,b,runs,u,o)=>{n.childNodes.forEach(c=>{
+    if(c.nodeType===3){if(c.textContent)runs.push({text:c.textContent,bold:b,ul:u,ol:o});}
     else if(c.nodeType!==1||c.classList.contains("mk")) return;
     else if(c.dataset&&c.dataset.tex!==undefined){runs.push(c.dataset.d==="1"?{eq:c.dataset.tex}:{math:c.dataset.tex});}
     else if(c.classList&&c.classList.contains("blank")) runs.push({blank:c.dataset.len||"m"});
     else if(c.classList&&c.classList.contains("box")) runs.push({box:true});
     else if(c.nodeName==="BR") runs.push({br:true});
-    else walk(c,b||/^(B|STRONG)$/.test(c.nodeName),runs);});};
+    else walk(c,b||/^(B|STRONG)$/.test(c.nodeName),runs,u||c.nodeName==="U"||c.classList.contains("uln")||c.classList.contains("uol"),o||c.classList.contains("ovl")||c.classList.contains("uol"));});};
   if(el.classList.contains("live")) return [];
   if(el.classList.contains("hdr")) return [{hdr:true}];
   if(el.dataset.tex!==undefined) return [{eq:el.dataset.tex}];
@@ -22641,12 +22667,12 @@ $("docx").onclick=async()=>{
   const pt=land?fontPt*0.97:fontPt, size=Math.round(pt*2);
   const tw=px=>Math.round(px*15);
   const colW=tw(cw()), F={ascii:"Times New Roman",hAnsi:"Times New Roman",cs:font,eastAsia:font};
-  const TR=(text,o={})=>new D.TextRun({text,font:F,size:o.size||size,sizeComplexScript:o.size||size,bold:o.bold,italics:o.italics});
+  const TR=(text,o={})=>new D.TextRun({text:o.ol?[...text].map((ch,i,a)=>ch.trim()&&!/\p{M}/u.test(a[i+1]||"")?ch+"\u0305":ch).join(""):text,font:F,size:o.size||size,sizeComplexScript:o.size||size,bold:o.bold,italics:o.italics,underline:o.ul?{type:D.UnderlineType.SINGLE}:undefined});
   const eqObj=(tex,display)=>{try{return MathConv.toDocx(D,mml(tex,display));}catch{return TR(tex);}};
   const runsD=(rs,bold)=>rs.map(r=>r.br?new D.TextRun({break:1}):r.math!==undefined?eqObj(r.math,false)
     :r.blank?new D.TextRun({text:"\u00A0".repeat({s:9,m:18,l:32}[r.blank]||18),underline:{type:D.UnderlineType.SINGLE},font:F,size})
     :r.box?new D.TextRun({text:"☐",font:{ascii:"Segoe UI Symbol",hAnsi:"Segoe UI Symbol",cs:"Segoe UI Symbol"},size:size+6})
-    :TR(r.text,{bold:bold||r.bold}));
+    :TR(r.text,{bold:bold||r.bold,ul:r.ul,ol:r.ol}));
   const b64=d=>{const s=atob(d.split(",")[1]);const a=new Uint8Array(s.length);for(let i=0;i<s.length;i++)a[i]=s.charCodeAt(i);return a;};
   const sp={line:Math.round(240*1.15),lineRule:D.LineRuleType.AUTO,before:0,after:0};
   const C=D.AlignmentType.CENTER;
