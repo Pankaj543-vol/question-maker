@@ -199,9 +199,64 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 .findbar .row input{flex:1;min-width:120px}
 ::highlight(fall){background:#ffe58a;color:#111}
 ::highlight(fcur){background:#ff9f43;color:#111}
+.lockov{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto}
+.lockbox{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;max-width:440px;width:100%;display:flex;flex-direction:column;gap:10px;box-sizing:border-box}
+.lockdev{display:flex;flex-direction:column;align-items:center;background:var(--accent-soft);border-radius:10px;padding:10px}
+.lockdev b{font:700 1.7rem/1.2 ui-monospace,Menlo,monospace;letter-spacing:2px;color:var(--accent)}
+.lockbox textarea{font:13px ui-monospace,Menlo,monospace;width:100%;box-sizing:border-box;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);word-break:break-all}
+.lockbox a.btn{text-decoration:none;display:inline-block}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head><body>
+<div class="lockov" id="lockov" role="dialog" aria-label="অ্যাপ চালু করুন">
+  <div class="lockbox">
+    <b style="font-size:1.15rem">Pankaj Question Maker</b>
+    <p style="margin:0">এই অ্যাপ চালাতে পঙ্কজবাবুর দেওয়া <b>চালু-কোড</b> লাগবে। কোড শুধু এই মোবাইলের জন্যই কাজ করবে।</p>
+    <div class="lockdev"><span class="small">আপনার যন্ত্রের নম্বর</span><b id="lockDev">…</b></div>
+    <div class="row"><button class="btn" id="lockCopy">নম্বর কপি করুন</button><a class="btn" id="lockWa" target="_blank" rel="noopener">WhatsApp-এ পাঠান</a></div>
+    <p class="small" style="margin:0">১) ওপরের নম্বরটা পঙ্কজবাবুকে পাঠান। ২) উনি যে কোড পাঠাবেন, সেটা কপি করে নিচে পেস্ট করুন।</p>
+    <textarea id="lockCode" rows="3" placeholder="চালু-কোড এখানে পেস্ট করুন" spellcheck="false" autocomplete="off"></textarea>
+    <button class="btn primary" id="lockGo">চালু করুন</button>
+    <p class="small" id="lockMsg" style="margin:0;color:var(--warn)" aria-live="polite"></p>
+  </div>
+</div>
+<script>
+/* only devices Pankaj has given a code to can use the app: the code is his digital signature on this device's number */
+(function(){
+  const PUB={"key_ops":["verify"],"ext":true,"kty":"EC","x":"Q_UMtFJQ7UTyZ-ebxTqhq_HPJJVJAGxn2goVqmDUqc8","y":"q9ltU124KDE0mjtJ8DyRBmqPdfpjzxDHrrPHsu39Mws","crv":"P-256"};
+  const AL="ABCDEFGHJKMNPQRSTUVWXYZ23456789", $l=id=>document.getElementById(id);
+  const st={get(k){try{return localStorage.getItem(k);}catch{return null;}},set(k,v){try{localStorage.setItem(k,v);}catch{}}};
+  let dev=st.get("pqmDev");
+  if(!dev||!/^[A-Z2-9]{3}-[A-Z2-9]{3}-[A-Z2-9]{3}$/.test(dev)){
+    const a=crypto.getRandomValues(new Uint8Array(9)); dev=[...a].map(x=>AL[x%AL.length]).join("").replace(/(...)(...)(...)/,"$1-$2-$3"); st.set("pqmDev",dev);
+  }
+  window.PQM_OK=false;
+  const ov=$l("lockov"), msg=t=>{$l("lockMsg").textContent=t||"";};
+  $l("lockDev").textContent=dev;
+  $l("lockWa").href="https://wa.me/?text="+encodeURIComponent("Pankaj Question Maker চালু করার জন্য আমার যন্ত্রের নম্বর: "+dev);
+  $l("lockCopy").onclick=async()=>{try{await navigator.clipboard.writeText(dev);msg("নম্বর কপি হয়েছে।");}catch{msg("নিজে থেকে কপি হল না, নম্বরটা লিখে পাঠান: "+dev);}};
+  const b64u=s=>{s=s.replace(/-/g,"+").replace(/_/g,"/");while(s.length%4)s+="=";const b=atob(s);return Uint8Array.from(b,c=>c.charCodeAt(0));};
+  async function check(code){
+    code=String(code||"").replace(/\s+/g,""); const m=code.match(/^E(\d{8}|0)\.([A-Za-z0-9_-]{80,90})$/); if(!m) return "bad";
+    try{
+      const key=await crypto.subtle.importKey("jwk",PUB,{name:"ECDSA",namedCurve:"P-256"},false,["verify"]);
+      const ok=await crypto.subtle.verify({name:"ECDSA",hash:"SHA-256"},key,b64u(m[2]),new TextEncoder().encode("PQM1|"+dev+"|"+m[1]));
+      if(!ok) return "bad";
+      if(m[1]!=="0"){const e=m[1],end=new Date(+e.slice(0,4),+e.slice(4,6)-1,+e.slice(6,8),23,59,59);if(Date.now()>end.getTime()) return "expired";}
+      return "ok";
+    }catch{return "nocrypto";}
+  }
+  const unlock=()=>{window.PQM_OK=true;ov.hidden=true;document.documentElement.style.overflow="";};
+  document.documentElement.style.overflow="hidden";
+  check(st.get("pqmCode")).then(r=>{ if(r==="ok") unlock(); else if(r==="expired") msg("আপনার অনুমতির মেয়াদ শেষ হয়েছে। নতুন কোডের জন্য যন্ত্রের নম্বরটা পঙ্কজবাবুকে পাঠান।"); });
+  $l("lockGo").onclick=async()=>{
+    const c=$l("lockCode").value.replace(/\s+/g,""); if(!c){msg("আগে কোডটা পেস্ট করুন।");return;}
+    const r=await check(c);
+    if(r==="ok"){st.set("pqmCode",c);unlock();}
+    else msg(r==="expired"?"এই কোডের মেয়াদ শেষ হয়ে গেছে।":r==="nocrypto"?"এই ব্রাউজারে চালু করা যাচ্ছে না। Google Chrome-এ খুলুন।":"কোড মেলেনি। কোডটা অন্য মোবাইলের জন্য বানানো, অথবা পুরোটা কপি হয়নি।");
+  };
+})();
+</script>
 <div class="wrap">
   <header class="bnA">
     <svg class="bn-art" viewBox="0 0 360 150" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -236,7 +291,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২৫ অক্টোবর, দুপুর ১টা (খোঁজা-বদলানো যুক্ত)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৩১ অক্টোবর (চালু-কোডের তালা যুক্ত)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -22232,7 +22287,8 @@ let pasteT=null,lastLen=0;
 $("pastebox").addEventListener("paste",()=>{clearTimeout(pasteT);pasteT=setTimeout(()=>$("pasteGo").click(),150);});
 $("pastebox").addEventListener("input",()=>{const n=$("pastebox").value.length;
   if(n-lastLen>80){clearTimeout(pasteT);pasteT=setTimeout(()=>$("pasteGo").click(),700);} lastLen=n;});
-function readyToExport(){ // put any waiting pasted text in, and never export the sample by mistake
+function readyToExport(){
+  if(!window.PQM_OK){setStatus("অ্যাপটা এখনও চালু করা হয়নি।",true);return false;} // put any waiting pasted text in, and never export the sample by mistake
   clearTimeout(pasteT);
   if($("pastebox").value.trim()&&$("pastebox").value.trim()!==PROMPT.trim()) $("pasteGo").click();
   if(hasExample){setStatus("এখনও শুধু নমুনা লেখা আছে। আগে Gemini-র লেখা পেস্ট করুন বা ছবি দিয়ে টাইপ করান।",true);return false;}
