@@ -205,6 +205,9 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 .lockdev b{font:700 1.7rem/1.2 ui-monospace,Menlo,monospace;letter-spacing:2px;color:var(--accent)}
 .lockbox textarea{font:13px ui-monospace,Menlo,monospace;width:100%;box-sizing:border-box;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);word-break:break-all}
 .lockbox a.btn{text-decoration:none;display:inline-block}
+.micbtn.on{background:#c0392b!important;color:#fff!important;border-color:#c0392b!important}
+.micpill{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:75;background:#c0392b;color:#fff;border-radius:99px;padding:9px 16px;font-size:.92rem;box-shadow:0 6px 20px rgba(0,0,0,.3);display:flex;gap:10px;align-items:center;max-width:92vw}
+.micpill button{border:0;background:#fff;color:#c0392b;border-radius:99px;padding:4px 12px;font:inherit;font-weight:600;cursor:pointer}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head><body>
@@ -272,7 +275,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৩১ অক্টোবর (পাসওয়ার্ডের তালা যুক্ত)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৩১ অক্টোবর দুপুর (🎤 বলে লেখা যুক্ত)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -383,6 +386,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
           <label>বিকল্পের নম্বর<select id="oStyle"><option value="lat">(a) (b) (c) (d)</option><option value="bl">(ক) (খ) (গ) (ঘ)</option><option value="rom">(i) (ii) (iii) (iv)</option></select></label>
           <label class="full">কোথা থেকে শুরু<select id="qStart"><option value="auto">আগের প্রশ্নের পর থেকে (নিজে থেকে)</option><option value="1">১ থেকে</option></select></label>
         </div>
+        <button class="btn wide micbtn" id="micDict" style="margin-top:6px">🎤 বলুন, লেখা হতে থাকবে</button>
         <button class="btn primary" id="dictGo" style="margin-top:8px">নম্বর দিয়ে সাজান</button>
         <div class="cmdplan" id="dictPlan" hidden>
           <div id="dictPlanText" style="white-space:pre-wrap"></div>
@@ -557,6 +561,8 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
           <select id="lineN" aria-label="কটা দাগ"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option><option>8</option><option>10</option></select>
           <button class="btn" id="linesBtn">≡ উত্তর লেখার দাগ</button>
           <button class="btn" id="boxBtn">☐ বক্স</button>
+          <button class="btn micbtn" id="micDoc">🎤 বলে লিখুন</button>
+          <select id="micLang" aria-label="কোন ভাষায় বলবেন"><option value="bn-IN">বাংলা</option><option value="en-IN">English</option></select>
           <button class="btn" id="findBtn">🔍 খুঁজুন ও বদলান</button>
           <button class="btn" id="symBtn">∑ অংকের চিহ্ন</button>
           <button class="btn" id="rboxBtn">☐ লাইনের শেষে ডানদিকে বক্স</button>
@@ -22492,6 +22498,65 @@ $("findAll").onclick=()=>{
   $("findInfo").textContent=msg; setStatus(msg);
 };
 document.addEventListener("keydown",e=>{ if((e.ctrlKey||e.metaKey)&&(e.key==="h"||e.key==="f"||e.key==="H"||e.key==="F")&&!$("editPane").classList.contains("offscreen")){ e.preventDefault(); if($("findbar").hidden) $("findBtn").click(); else $("findQ").focus(); } });
+/* ---------- speak and it types as you talk (the browser's own speech recognition) ---------- */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+let mic=null; // {target, rec, ...}
+function micPill(t){ let p=$("micpill"); if(!t){ if(p) p.remove(); return; }
+  if(!p){ p=document.createElement("div"); p.id="micpill"; p.className="micpill"; p.setAttribute("role","status");
+    p.innerHTML='<span id="micTxt"></span><button type="button" id="micStop">থামান</button>'; document.body.appendChild(p);
+    $("micStop").onclick=()=>micStop(); }
+  $("micTxt").textContent=t; }
+function micStart(kind){
+  if(!SR){ setStatus("এই ব্রাউজারে মুখে বলে লেখা চলে না। Google Chrome-এ অ্যাপটা খুলুন।",true); return; }
+  if(mic){ micStop(); return; }
+  const lang=$("micLang").value;
+  const m={kind,lang,live:true,final:"",interim:""};
+  if(kind==="dict"){ const t=$("dict"); const p=t.selectionStart??t.value.length; m.before=t.value.slice(0,p); m.after=t.value.slice(t.selectionEnd??p); }
+  else{
+    if(needOwnPaper()) return;
+    let r=lastRange&&$("doc").contains(lastRange.startContainer)?lastRange.cloneRange():null;
+    if(!r&&lastBlock&&lastBlock.isConnected&&/^(P|H2|H3)$/.test(lastBlock.tagName)){r=document.createRange();r.selectNodeContents(lastBlock);r.collapse(false);}
+    if(!r){ setStatus("আগে প্রশ্নপত্রের লেখার যেখানে বলা কথা বসাতে চান সেখানে একবার ট্যাপ করুন, তারপর 🎤 চাপুন।",true); return; }
+    const n0=r.startContainer.nodeType===1?r.startContainer:r.startContainer.parentElement;
+    const lock=n0&&n0.closest&&n0.closest('#doc [contenteditable="false"]'); if(lock){ r.setStartAfter(lock); r.collapse(true); }
+    snapshot(); r.deleteContents(); m.node=document.createTextNode(""); r.insertNode(m.node);
+    const prev=m.node.previousSibling; m.lead=prev&&prev.nodeType===3&&prev.nodeValue&&!/\s$/.test(prev.nodeValue)?" ":"";
+  }
+  mic=m; $(kind==="dict"?"micDict":"micDoc").classList.add("on");
+  micPill(lang==="bn-IN"?"শুনছি… বলুন":"Listening… speak");
+  micRun();
+}
+function micShow(){
+  const m=mic; if(!m) return; const txt=(m.final+(m.interim?(m.final?" ":"")+m.interim:"")).replace(/\s+/g," ").trim();
+  if(m.kind==="dict"){ const t=$("dict"); const sep=m.before&&!/\s$/.test(m.before)&&txt?" ":""; t.value=m.before+sep+txt+m.after; const pos=(m.before+sep+txt).length; try{t.setSelectionRange(pos,pos);}catch{} }
+  else if(m.node){ m.node.nodeValue=txt?m.lead+txt:""; refitSoon(); }
+}
+function micRun(){ // one sentence per round (steadier on Android), restarts by itself until "থামান"
+  const m=mic; if(!m) return;
+  const rec=new SR(); m.rec=rec; rec.lang=m.lang; rec.interimResults=true; rec.continuous=false; rec.maxAlternatives=1;
+  rec.onresult=e=>{ let fin="",int=""; for(let i=0;i<e.results.length;i++){ const s=e.results[i][0].transcript; if(e.results[i].isFinal) fin+=s; else int+=s; }
+    m.interim=int.trim(); if(fin.trim()){ m.final=(m.final+" "+fin.trim()).trim(); m.interim=""; } micShow(); };
+  rec.onerror=e=>{ const c=e.error;
+    if(c==="not-allowed"||c==="service-not-allowed"){ m.live=false; setStatus("মাইকের অনুমতি নেই। ঠিকানার পাশের 🔒 চিহ্নে চেপে Microphone → Allow করুন, অথবা ফোনের Settings-এ Chrome-কে মাইকের অনুমতি দিন।",true); }
+    else if(c==="network"){ m.live=false; setStatus("মুখে বলে লেখার জন্য ইন্টারনেট লাগবে।",true); }
+    else if(c==="audio-capture"){ m.live=false; setStatus("মাইক পাওয়া যাচ্ছে না। মাইক বন্ধ করা আছে কিনা দেখুন।",true); }
+    else if(c==="language-not-supported"){ m.live=false; setStatus("এই ভাষা এখানে চলছে না। ভাষা বদলে দেখুন।",true); } };
+  rec.onend=()=>{ if(mic===m&&m.live){ m.interim=""; micShow(); try{ micRun(); }catch{ micStop(); } } else if(mic===m) micStop(); };
+  try{ rec.start(); }catch{ setTimeout(()=>{ if(mic===m&&m.live){ try{rec.start();}catch{micStop();} } },300); }
+}
+function micStop(){
+  const m=mic; if(!m) return; mic=null; m.live=false; try{ m.rec&&m.rec.abort(); }catch{}
+  m.interim=""; mic=m; micShow(); mic=null;
+  ["micDict","micDoc"].forEach(id=>$(id)&&$(id).classList.remove("on")); micPill(null);
+  if(m.kind==="doc"&&m.node){ if(!m.node.nodeValue) m.node.remove(); else{ const a=document.createRange(); a.setStartAfter(m.node); a.collapse(true); lastRange=a; hasExample=false; refit(); } }
+  if(m.final) setStatus(m.kind==="dict"?"বলা কথা ঘরে বসেছে। শেষ হলে \"নম্বর দিয়ে সাজান\" চাপুন।":"বলা কথা প্রশ্নপত্রে বসেছে। ভুল হলে \"↶ ফিরিয়ে আনুন\"।");
+}
+["micDict","micDoc"].forEach(id=>{ const b=$(id); if(!b) return;
+  b.addEventListener("pointerdown",e=>e.preventDefault()); b.addEventListener("mousedown",e=>e.preventDefault());
+  b.onclick=()=>micStart(id==="micDict"?"dict":"doc"); });
+try{ const ml=localStorage.getItem("micLang"); if(ml) $("micLang").value=ml; }catch{}
+$("micLang").onchange=()=>{ try{localStorage.setItem("micLang",$("micLang").value);}catch{} if(mic){ const k=mic.kind; micStop(); micStart(k); } };
+if(!SR) ["micDict","micDoc"].forEach(id=>{ const b=$(id); if(b) b.title="এই ব্রাউজারে চলে না, Chrome-এ খুলুন"; });
 $("eqcancel").onclick=()=>{ if(eqNew&&eqEl){eqEl.remove();refit();} closeEq(); };
 /* ---------- maths symbol board ----------
    item: [button label, TeX, plain character for ordinary text (empty = it is a structure, opens as a formula)] */
