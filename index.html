@@ -208,6 +208,10 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 .micbtn.on{background:#c0392b!important;color:#fff!important;border-color:#c0392b!important}
 .micpill{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:75;background:#c0392b;color:#fff;border-radius:99px;padding:9px 16px;font-size:.92rem;box-shadow:0 6px 20px rgba(0,0,0,.3);display:flex;gap:10px;align-items:center;max-width:92vw}
 .micpill button{border:0;background:#fff;color:#c0392b;border-radius:99px;padding:4px 12px;font:inherit;font-weight:600;cursor:pointer}
+.fmtbar{display:inline-flex;gap:0;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.fmtbar .fmt{border:0;border-radius:0;border-right:1px solid var(--line);min-width:40px;padding:8px 10px}
+.fmtbar .fmt:last-child{border-right:0}
+.fmtbar .fmt sup{font-size:.65em}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head><body>
@@ -275,7 +279,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২ নভেম্বর (ঝকঝকে PDF)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২ নভেম্বর রাত (বোল্ড ও অক্ষরের মাপ)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -561,6 +565,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
           <select id="lineN" aria-label="কটা দাগ"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option><option>8</option><option>10</option></select>
           <button class="btn" id="linesBtn">≡ উত্তর লেখার দাগ</button>
           <button class="btn" id="boxBtn">☐ বক্স</button>
+          <span class="fmtbar" role="group" aria-label="লেখা সাজান"><button class="btn fmt" id="fmtB" title="বোল্ড (মোটা)"><b>B</b></button><button class="btn fmt" id="fmtI" title="তেরছা (ইটালিক)"><i style="font-family:serif">I</i></button><button class="btn fmt" id="fmtUp" title="অক্ষর বড়">A<sup>+</sup></button><button class="btn fmt" id="fmtDn" title="অক্ষর ছোট">A<sup>−</sup></button><button class="btn fmt" id="fmtRst" title="মাপ সাধারণ">A</button></span>
           <button class="btn micbtn" id="micDoc">🎤 বলে লিখুন</button>
           <select id="micLang" aria-label="কোন ভাষায় বলবেন"><option value="bn-IN">বাংলা</option><option value="en-IN">English</option></select>
           <button class="btn" id="findBtn">🔍 খুঁজুন ও বদলান</button>
@@ -22557,6 +22562,65 @@ function micStop(){
 try{ const ml=localStorage.getItem("micLang"); if(ml) $("micLang").value=ml; }catch{}
 $("micLang").onchange=()=>{ try{localStorage.setItem("micLang",$("micLang").value);}catch{} if(mic){ const k=mic.kind; micStop(); micStart(k); } };
 if(!SR) ["micDict","micDoc"].forEach(id=>{ const b=$(id); if(b) b.title="এই ব্রাউজারে চলে না, Chrome-এ খুলুন"; });
+/* ---------- bold, italic and letter size for chosen words (or the whole line) ---------- */
+const FSZ={"-1":0.85,"0":1,"1":1.2,"2":1.4,"3":1.7};
+const fszOf=el=>{let f=1;for(let p=el;p&&p!==$("doc");p=p.parentElement){if(p.classList&&p.classList.contains("fsz"))f*=Number(p.dataset.f)||1;}return f;};
+function fmtRange(){ // the chosen words; nothing chosen = the whole line where the cursor is
+  if(needOwnPaper()) return null;
+  let r=lastRange&&$("doc").contains(lastRange.commonAncestorContainer)?lastRange.cloneRange():null;
+  if(r&&r.collapsed){ const b=topBlock(r.startContainer); if(b&&/^(P|H2|H3)$/.test(b.tagName)&&!b.classList.contains("hdr")){ r=document.createRange(); r.selectNodeContents(b); const mk=b.querySelector(":scope > .mk"); if(mk&&b.firstChild===mk) r.setStartAfter(mk); } else r=null; }
+  if(!r){ setStatus("আগে প্রশ্নপত্রের লেখা বেছে নিন (আঙুল চেপে টেনে), অথবা যে লাইন বদলাবেন তাতে একবার ট্যাপ করুন।",true); return null; }
+  const host=r.commonAncestorContainer.nodeType===1?r.commonAncestorContainer:r.commonAncestorContainer.parentElement;
+  if(host&&host.closest&&host.closest(".hdr")){ setStatus("প্রশ্নপত্রের মাথার লেখা এখানে বদলানো যায় না।",true); return null; }
+  return r;
+}
+function fmtSelect(r){ const d=$("doc"); try{d.focus({preventScroll:true});}catch{d.focus();} const s=getSelection(); s.removeAllRanges(); s.addRange(r); }
+function fmtDone(){ const s=getSelection(); if(s.rangeCount) lastRange=s.getRangeAt(0).cloneRange(); hasExample=false; refit(); }
+function fmtToggle(cmd){
+  const r=fmtRange(); if(!r) return; snapshot(); fmtSelect(r);
+  try{ document.execCommand("styleWithCSS",false,false); }catch{}
+  document.execCommand(cmd,false,null);
+  $("doc").querySelectorAll("span[style]").forEach(sp=>{ // some browsers write style="font-weight:bold" instead of <b>
+    if(sp.classList.contains("fsz")) return;
+    const st=sp.style; let tag=null;
+    if(/bold|[6-9]00/.test(st.fontWeight)) tag="b"; else if(st.fontStyle==="italic") tag="i";
+    if(tag&&sp.attributes.length===1){ const n=document.createElement(tag); while(sp.firstChild)n.appendChild(sp.firstChild); sp.replaceWith(n); }
+  });
+  fmtDone();
+}
+function fszNorm(){ // every size box shows exactly its level, whatever box it sits in
+  $("doc").querySelectorAll("span.fsz").forEach(sp=>{
+    const want=FSZ[String(Number(sp.dataset.l)||0)]||1, f=Math.round(want/fszOf(sp.parentElement)*1000)/1000;
+    if(Math.abs(f-1)<0.01&&Math.abs(want-fszOf(sp.parentElement))<0.01){ while(sp.firstChild) sp.before(sp.firstChild); sp.remove(); return; }
+    sp.dataset.f=String(f); sp.style.fontSize=f+"em";
+  });
+}
+function fmtSize(step){ // step +1 / -1, or 0 = back to normal
+  const r=fmtRange(); if(!r) return;
+  const startEl=r.startContainer.nodeType===1?r.startContainer:r.startContainer.parentElement;
+  const near=startEl&&startEl.closest?startEl.closest(".fsz"):null;
+  const cur=near&&$("doc").contains(near)?Number(near.dataset.l)||0:0;
+  const lvl=step===0?0:Math.max(-1,Math.min(3,cur+step));
+  if(step!==0&&lvl===cur){ setStatus(step>0?"এর চেয়ে বড় করা যায় না।":"এর চেয়ে ছোট করা যায় না।"); return; }
+  snapshot(); fmtSelect(r);
+  try{ document.execCommand("styleWithCSS",false,false); }catch{}
+  document.execCommand("fontSize",false,"7");
+  const made=[...$("doc").querySelectorAll('font[size="7"]')];
+  made.forEach(fn=>{
+    fn.querySelectorAll(".fsz").forEach(inner=>{ while(inner.firstChild) inner.before(inner.firstChild); inner.remove(); }); // no size inside size
+    const parentF=fszOf(fn.parentElement), want=FSZ[String(lvl)], f=want/parentF;
+    if(Math.abs(f-1)<0.01){ while(fn.firstChild) fn.before(fn.firstChild); fn.remove(); return; }
+    const sp=document.createElement("span"); sp.className="fsz"; sp.dataset.l=String(lvl); sp.dataset.f=String(Math.round(f*1000)/1000); sp.style.fontSize=(Math.round(f*1000)/1000)+"em";
+    while(fn.firstChild) sp.appendChild(fn.firstChild); fn.replaceWith(sp);
+    try{ const rr=document.createRange(); rr.selectNodeContents(sp); getSelection().removeAllRanges(); getSelection().addRange(rr); }catch{}
+  });
+  $("doc").querySelectorAll("span.fsz").forEach(sp=>{ if(!sp.textContent&&!sp.querySelector("[data-tex],img")) sp.remove(); });
+  fszNorm(); fmtDone();
+  setStatus(lvl===0?"অক্ষরের মাপ সাধারণ করা হল।":`অক্ষরের মাপ: ${{"-1":"ছোট","1":"বড়","2":"আরও বড়","3":"খুব বড়"}[String(lvl)]}।`);
+}
+["fmtB","fmtI","fmtUp","fmtDn","fmtRst"].forEach(id=>{ const b=$(id); b.addEventListener("pointerdown",e=>e.preventDefault()); b.addEventListener("mousedown",e=>e.preventDefault()); });
+$("fmtB").onclick=()=>fmtToggle("bold"); $("fmtI").onclick=()=>fmtToggle("italic");
+$("fmtUp").onclick=()=>fmtSize(1); $("fmtDn").onclick=()=>fmtSize(-1); $("fmtRst").onclick=()=>fmtSize(0);
 $("eqcancel").onclick=()=>{ if(eqNew&&eqEl){eqEl.remove();refit();} closeEq(); };
 /* ---------- maths symbol board ----------
    item: [button label, TeX, plain character for ordinary text (empty = it is a structure, opens as a formula)] */
@@ -22760,14 +22824,14 @@ async function flattenFigs(){
   }
 }
 function blockOf(el){
-  const walk=(n,b,runs,u,o)=>{n.childNodes.forEach(c=>{
-    if(c.nodeType===3){if(c.textContent)runs.push({text:c.textContent,bold:b,ul:u,ol:o});}
+  const walk=(n,b,runs,u,o,it,sz)=>{n.childNodes.forEach(c=>{
+    if(c.nodeType===3){if(c.textContent)runs.push({text:c.textContent,bold:b,ul:u,ol:o,it,sz});}
     else if(c.nodeType!==1||c.classList.contains("mk")) return;
     else if(c.dataset&&c.dataset.tex!==undefined){runs.push(c.dataset.d==="1"?{eq:c.dataset.tex}:{math:c.dataset.tex});}
     else if(c.classList&&c.classList.contains("blank")) runs.push({blank:c.dataset.len||"m"});
     else if(c.classList&&c.classList.contains("box")) runs.push({box:true});
     else if(c.nodeName==="BR") runs.push({br:true});
-    else walk(c,b||/^(B|STRONG)$/.test(c.nodeName),runs,u||c.nodeName==="U"||c.classList.contains("uln")||c.classList.contains("uol"),o||c.classList.contains("ovl")||c.classList.contains("uol"));});};
+    else walk(c,b||/^(B|STRONG)$/.test(c.nodeName)||/bold|[6-9]00/.test(c.style&&c.style.fontWeight||""),runs,u||c.nodeName==="U"||c.classList.contains("uln")||c.classList.contains("uol"),o||c.classList.contains("ovl")||c.classList.contains("uol"),it||/^(I|EM)$/.test(c.nodeName),(sz||1)*(c.classList.contains("fsz")?Number(c.dataset.f)||1:1));});};
   if(el.classList.contains("live")) return [];
   if(el.classList.contains("hdr")) return [{hdr:true}];
   if(el.dataset.tex!==undefined) return [{eq:el.dataset.tex}];
@@ -22882,7 +22946,7 @@ $("docx").onclick=async()=>{
   const runsD=(rs,bold)=>rs.map(r=>r.br?new D.TextRun({break:1}):r.math!==undefined?eqObj(r.math,false)
     :r.blank?new D.TextRun({text:"\u00A0".repeat({s:9,m:18,l:32}[r.blank]||18),underline:{type:D.UnderlineType.SINGLE},font:F,size})
     :r.box?new D.TextRun({text:"☐",font:{ascii:"Segoe UI Symbol",hAnsi:"Segoe UI Symbol",cs:"Segoe UI Symbol"},size:size+6})
-    :TR(r.text,{bold:bold||r.bold,ul:r.ul,ol:r.ol}));
+    :TR(r.text,{bold:bold||r.bold,ul:r.ul,ol:r.ol,italics:r.it,size:r.sz&&Math.abs(r.sz-1)>0.01?Math.round(size*r.sz):undefined}));
   const b64=d=>{const s=atob(d.split(",")[1]);const a=new Uint8Array(s.length);for(let i=0;i<s.length;i++)a[i]=s.charCodeAt(i);return a;};
   const sp={line:Math.round(240*1.15),lineRule:D.LineRuleType.AUTO,before:0,after:0};
   const C=D.AlignmentType.CENTER;
