@@ -275,7 +275,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৩১ অক্টোবর দুপুর (🎤 বলে লেখা যুক্ত)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২ নভেম্বর (ঝকঝকে PDF)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -22809,9 +22809,12 @@ $("pdf").onclick=async()=>{
     for(let i=0;i<sheets.length;i++){
       host.innerHTML=""; host.appendChild(sheets[i].el); sheets[i].el.style.position="static";
       setStatus(`PDF তৈরি হচ্ছে… ${bn(i+1)}/${bn(sheets.length)}`);
-      const cv=await html2canvas(sheets[i].el,{scale:(window.innerWidth<700?2:2.5),backgroundColor:"#ffffff",logging:false});
+      // high resolution (about 380 dots per inch) so printed letters stay sharp; smaller if the phone runs out of memory
+      let cv=null;
+      for(const sc of [4,3,2]){ try{ cv=await html2canvas(sheets[i].el,{scale:sc,backgroundColor:"#ffffff",logging:false}); if(cv&&cv.width>0&&cv.getContext("2d").getImageData(0,0,1,1)) break; }catch{ cv=null; } }
+      if(!cv) throw new Error("canvas");
       if(i) pdf.addPage("a4",land?"landscape":"portrait");
-      const jpg=cv.toDataURL("image/jpeg",0.93); shots.push({cap:sheets[i].cap,src:jpg});
+      const jpg=cv.toDataURL("image/jpeg",0.97); shots.push({cap:sheets[i].cap,src:jpg});
       pdf.addImage(jpg,"JPEG",0,0,land?297:210,land?210:297);
     }
     const name=fileBase()+".pdf", blob=pdf.output("blob");
