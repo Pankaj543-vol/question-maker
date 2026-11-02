@@ -217,8 +217,20 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
   html,body{margin:0!important;padding:0!important;background:#fff!important;overflow:visible!important}
   body>*:not(#printArea){display:none!important}
   #printArea{display:block!important}
-  #printArea .psheet{position:relative!important;transform:none!important;box-shadow:none!important;break-after:page;page-break-after:always;overflow:hidden;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  #printArea .psheet:last-child{break-after:auto;page-break-after:auto}
+  #printArea .pwrap{position:relative;overflow:hidden;break-after:page;page-break-after:always;break-inside:avoid}
+  #printArea .pwrap:last-child{break-after:auto;page-break-after:auto}
+  #printArea .psheet{position:absolute!important;left:0;top:0;box-shadow:none!important;overflow:hidden;transform-origin:0 0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+/* the paper may come out the other way round (Android printing often keeps A4 upright): then each sheet is turned to fill the page */
+@media print and (orientation:landscape){
+  #printArea.pland .pwrap{width:297mm;height:209.5mm}
+  #printArea.pport .pwrap{width:297mm;height:209.5mm}
+  #printArea.pport .psheet{transform:translateY(210mm) rotate(-90deg)!important}
+}
+@media print and (orientation:portrait){
+  #printArea.pport .pwrap{width:210mm;height:296.5mm}
+  #printArea.pland .pwrap{width:210mm;height:296.5mm}
+  #printArea.pland .psheet{transform:translateX(210mm) rotate(90deg)!important}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -287,7 +299,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২ নভেম্বর রাত (ঝকঝকে ছাপা)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২ নভেম্বর রাত ৯:৪৫ (পুরো পাতা জুড়ে ছাপা)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -22881,14 +22893,16 @@ $("pdf").onclick=async()=>{
   const land=mode!=="a4", sheets=buildSheets(true);
   let area=$("printArea"); if(area) area.remove();
   area=document.createElement("div"); area.id="printArea"; area.setAttribute("aria-hidden","true");
-  sheets.forEach(s=>{ s.el.style.position="relative"; s.el.style.transform="none"; s.el.style.boxShadow="none"; area.appendChild(s.el); });
+  area.className=land?"pland":"pport";
+  sheets.forEach(s=>{ s.el.style.position="relative"; s.el.style.transform="none"; s.el.style.boxShadow="none";
+    const w=document.createElement("div"); w.className="pwrap"; w.appendChild(s.el); area.appendChild(w); }); // one paper each; turned to fit if the printer page is the other way
   document.body.appendChild(area);
   let ps=$("printPage"); if(!ps){ ps=document.createElement("style"); ps.id="printPage"; document.head.appendChild(ps); }
-  ps.textContent=`@page{size:A4 ${land?"landscape":"portrait"};margin:0}`;
+  ps.textContent=`@page{margin:0}`; // paper direction is left to the print screen; the sheets turn themselves to fit
   const oldTitle=document.title; document.title=fileBase(); // Chrome's "Save as PDF" uses this as the file name
   const done=()=>{ document.title=oldTitle; const a=$("printArea"); if(a) a.remove(); window.removeEventListener("afterprint",done); };
   window.addEventListener("afterprint",done);
-  setStatus(land?"ছাপার পাতা খুলছে। PDF চাইলে প্রিন্টারের জায়গায় \"Save as PDF\" বাছুন। কাগজে ছাপার সময় \"দুপিঠে, ছোট দিক বরাবর উল্টে\" (Both sides, flip on short edge) বাছবেন।":"ছাপার পাতা খুলছে। PDF চাইলে প্রিন্টারের জায়গায় \"Save as PDF\" বাছুন।");
+  setStatus(land?"ছাপার পাতা খুলছে। PDF চাইলে \"Save as PDF\" বাছুন, আর Paper/Orientation-এ \"Landscape\" (আড়াআড়ি) বাছুন, তাহলে পাতা সোজা দেখাবে। কাগজে ছাপার সময় \"দুপিঠে, ছোট দিক বরাবর উল্টে\" (Both sides, flip on short edge) বাছবেন।":"ছাপার পাতা খুলছে। PDF চাইলে \"Save as PDF\" বাছুন, আর Orientation-এ \"Portrait\" (খাড়া) রাখুন।");
   await new Promise(r=>setTimeout(r,250));
   try{ window.print(); }catch(e){ setStatus("এখানে ছাপার পাতা খোলা যাচ্ছে না। অ্যাপটা Google Chrome-এ খুলে আবার চাপুন।",true); done(); return; }
   setTimeout(()=>{ if(!matchMedia("print").matches) done(); },60000);
