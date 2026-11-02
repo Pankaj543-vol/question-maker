@@ -212,6 +212,14 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 .fmtbar .fmt{border:0;border-radius:0;border-right:1px solid var(--line);min-width:40px;padding:8px 10px}
 .fmtbar .fmt:last-child{border-right:0}
 .fmtbar .fmt sup{font-size:.65em}
+#printArea{display:none}
+@media print{
+  html,body{margin:0!important;padding:0!important;background:#fff!important;overflow:visible!important}
+  body>*:not(#printArea){display:none!important}
+  #printArea{display:block!important}
+  #printArea .psheet{position:relative!important;transform:none!important;box-shadow:none!important;break-after:page;page-break-after:always;overflow:hidden;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #printArea .psheet:last-child{break-after:auto;page-break-after:auto}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head><body>
@@ -279,7 +287,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২ নভেম্বর রাত ৯টা (গাঢ় লেখা)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২ নভেম্বর রাত (ঝকঝকে ছাপা)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -467,7 +475,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 
       <div class="step">
         <h2><span>৪</span>বের করুন</h2>
-        <button class="btn primary" id="pdf">PDF নামান (ছাপার জন্য)</button>
+        <button class="btn primary" id="pdf">🖨 ঝকঝকে PDF / সরাসরি ছাপুন</button>
         <div style="height:8px"></div>
         <button class="btn wide" id="docx">Word ফাইল (.docx) নামান, Google Docs-এ এডিটের জন্য</button>
         <div style="height:8px"></div>
@@ -22866,31 +22874,24 @@ function saveErr(e,what){
 
 /* ---------- PDF ---------- */
 $("pdf").onclick=async()=>{
-  closeEq();closeFig();closePick(); if(!readyToExport()) return;
-  if(!downloads){setStatus("এখানে ফাইল নামানো যাচ্ছে না।",true);return;}
-  if(!window.html2canvas||!window.jspdf){setStatus("PDF বানানোর জিনিসপত্র এখনও লোড হয়নি। একটু পরে আবার চাপুন।",true);return;}
-  refit(); setStatus("PDF তৈরি হচ্ছে… একটু সময় লাগবে।"); $("pdf").disabled=true; $("pdf").textContent="PDF তৈরি হচ্ছে…";
-  const host=document.createElement("div"); host.style.cssText="position:fixed;left:-30000px;top:0;";
-  document.body.appendChild(host);
-  try{
-    const sheets=buildSheets(true), land=mode!=="a4", shots=[];
-    const pdf=new window.jspdf.jsPDF({orientation:land?"landscape":"portrait",unit:"mm",format:"a4",compress:true});
-    for(let i=0;i<sheets.length;i++){
-      host.innerHTML=""; host.appendChild(sheets[i].el); sheets[i].el.style.position="static";
-      setStatus(`PDF তৈরি হচ্ছে… ${bn(i+1)}/${bn(sheets.length)}`);
-      // high resolution (about 380 dots per inch) so printed letters stay sharp; smaller if the phone runs out of memory
-      let cv=null;
-      for(const sc of [4,3,2]){ try{ cv=await html2canvas(sheets[i].el,{scale:sc,backgroundColor:"#ffffff",logging:false}); if(cv&&cv.width>0&&cv.getContext("2d").getImageData(0,0,1,1)) break; }catch{ cv=null; } }
-      if(!cv) throw new Error("canvas");
-      if(i) pdf.addPage("a4",land?"landscape":"portrait");
-      const jpg=cv.toDataURL("image/jpeg",0.97); shots.push({cap:sheets[i].cap,src:jpg});
-      pdf.addImage(jpg,"JPEG",0,0,land?297:210,land?210:297);
-    }
-    const name=fileBase()+".pdf", blob=pdf.output("blob");
-    setStatus("PDF তৈরি। দেখে নিয়ে \"ঠিক আছে, ডাউনলোড করুন\" চাপুন।");
-    showPdfCheck(shots,name,blob,land);
-  }catch(e){ setStatus(saveErr(e,"PDF"),e?.code!=="declined"); }
-  finally{ host.remove(); $("pdf").disabled=false; $("pdf").textContent="PDF নামান (ছাপার জন্য)"; }
+  closeEq();closeFig();closePick(); if(typeof fClear==="function"&&!$("findbar").hidden){$("findbar").hidden=true;fClear();}
+  if(!readyToExport()) return;
+  refit(); await (document.fonts&&document.fonts.ready||Promise.resolve());
+  // the real letters go to the printer (not a picture of them), so they stay sharp at any printer
+  const land=mode!=="a4", sheets=buildSheets(true);
+  let area=$("printArea"); if(area) area.remove();
+  area=document.createElement("div"); area.id="printArea"; area.setAttribute("aria-hidden","true");
+  sheets.forEach(s=>{ s.el.style.position="relative"; s.el.style.transform="none"; s.el.style.boxShadow="none"; area.appendChild(s.el); });
+  document.body.appendChild(area);
+  let ps=$("printPage"); if(!ps){ ps=document.createElement("style"); ps.id="printPage"; document.head.appendChild(ps); }
+  ps.textContent=`@page{size:A4 ${land?"landscape":"portrait"};margin:0}`;
+  const oldTitle=document.title; document.title=fileBase(); // Chrome's "Save as PDF" uses this as the file name
+  const done=()=>{ document.title=oldTitle; const a=$("printArea"); if(a) a.remove(); window.removeEventListener("afterprint",done); };
+  window.addEventListener("afterprint",done);
+  setStatus(land?"ছাপার পাতা খুলছে। PDF চাইলে প্রিন্টারের জায়গায় \"Save as PDF\" বাছুন। কাগজে ছাপার সময় \"দুপিঠে, ছোট দিক বরাবর উল্টে\" (Both sides, flip on short edge) বাছবেন।":"ছাপার পাতা খুলছে। PDF চাইলে প্রিন্টারের জায়গায় \"Save as PDF\" বাছুন।");
+  await new Promise(r=>setTimeout(r,250));
+  try{ window.print(); }catch(e){ setStatus("এখানে ছাপার পাতা খোলা যাচ্ছে না। অ্যাপটা Google Chrome-এ খুলে আবার চাপুন।",true); done(); return; }
+  setTimeout(()=>{ if(!matchMedia("print").matches) done(); },60000);
 };
 
 /* the exact pages that go into the PDF, shown before saving */
