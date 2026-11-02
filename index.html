@@ -125,6 +125,9 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 .psheet{background:#fff;display:flex;transform-origin:0 0;position:absolute;left:0;top:0;box-shadow:0 1px 3px rgba(0,0,0,.15),0 6px 18px rgba(0,0,0,.08)}
 .psheet.fold .ppage+.ppage{border-left:1px dashed #d0d0d0}
 .psheet.cut .ppage+.ppage{border-left:1px dashed #8a8a8a}
+.psheet.vsplit{flex-direction:column}
+.psheet.vsplit.fold .ppage+.ppage{border-left:0;border-top:1px dashed #d0d0d0}
+.psheet.vsplit.cut .ppage+.ppage{border-left:0;border-top:1px dashed #8a8a8a}
 .ppage{box-sizing:border-box;overflow:hidden;flex:none;position:relative}
 .ppage .num{position:absolute;bottom:6px;left:0;right:0;text-align:center;font:11px var(--ui);color:#aaa}
 .eqedit{background:var(--panel);border:1px solid var(--accent);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px}
@@ -303,7 +306,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২ নভেম্বর রাত ১০টা (মার্জিন ঠিক করা যায়)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২ নভেম্বর রাত (আড়াআড়ি/খাড়া, এক/দুই ভাগ)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -450,9 +453,17 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
       <div class="step">
         <h2><span>২</span>পাতার ধাঁচ</h2>
         <div class="seg" role="radiogroup" aria-label="পাতার ধাঁচ">
-          <label><input type="radio" name="mode" id="mBook" value="booklet" checked><span>বুকলেট<br><small>আড়াআড়ি, দুভাগ, ভাঁজ</small></span></label>
-          <label><input type="radio" name="mode" id="mA4" value="a4"><span>সাধারণ A4<br><small>খাড়া পাতা</small></span></label>
-          <label><input type="radio" name="mode" id="mDup" value="dup"><span>একই প্রশ্ন দুবার<br><small>কেটে দুটো</small></span></label>
+          <label><input type="radio" name="orient" id="oLand" value="land" checked><span>আড়াআড়ি<br><small>Landscape</small></span></label>
+          <label><input type="radio" name="orient" id="oPort" value="port"><span>খাড়া<br><small>Portrait</small></span></label>
+        </div>
+        <div class="seg" role="radiogroup" aria-label="কাগজে কটা ভাগ" style="margin-top:6px">
+          <label><input type="radio" name="parts" id="pOne" value="one"><span>এক ভাগ<br><small>পুরো কাগজে একটা পাতা</small></span></label>
+          <label><input type="radio" name="parts" id="pBook" value="book" checked><span>দুই ভাগ, বুকলেট<br><small>ভাঁজ করে বই</small></span></label>
+          <label><input type="radio" name="parts" id="pDup" value="dup"><span>দুই ভাগ, একই প্রশ্ন<br><small>কেটে দুটো</small></span></label>
+        </div>
+        <p class="small" id="layoutName" style="margin:6px 0 0;font-weight:600;color:var(--accent)"></p>
+        <div style="display:none">
+          <input type="radio" name="mode" id="mBook" value="booklet" checked><input type="radio" name="mode" id="mA4" value="a4"><input type="radio" name="mode" id="mDup" value="dup"><input type="radio" name="mode" id="mLand1" value="land1"><input type="radio" name="mode" id="mPdup" value="pdup">
         </div>
         <div class="row" id="gapWrap" style="margin-top:8px">
           <span class="small">দুই ভাগের মাঝের ফাঁক:</span>
@@ -21398,15 +21409,17 @@ const toNum=s=>Number(String(s).replace(/[০-৯]/g,d=>BN.indexOf(d)));
 const MODES={
   booklet:{sheetW:1123,sheetH:794,pageW:561.5,pageH:794,mx:28,my:30,lo:7,hi:13,auto:11},
   a4:{sheetW:794,sheetH:1123,pageW:794,pageH:1123,mx:45,my:42,lo:8,hi:15,auto:12},
-  dup:{sheetW:1123,sheetH:794,pageW:561.5,pageH:794,mx:28,my:30,lo:7,hi:14,auto:11}
+  dup:{sheetW:1123,sheetH:794,pageW:561.5,pageH:794,mx:28,my:30,lo:7,hi:14,auto:11},
+  land1:{sheetW:1123,sheetH:794,pageW:1123,pageH:794,mx:45,my:40,lo:8,hi:15,auto:12},
+  pdup:{sheetW:794,sheetH:1123,pageW:794,pageH:561.5,mx:30,my:28,lo:7,hi:14,auto:11}
 };
 let mode="booklet", G=MODES.booklet, fontPt=11, pageList=[];
 let sampleHeader=false, images=[], imgSeq=0, sample=null, downloads=null, ctl=null, hasExample=true;
 const PXMM=96/25.4; let gapMM=15; // gap between the two halves of a landscape sheet
-const land2=()=>mode!=="a4", gapPx=()=>gapMM*PXMM;
+const land2=()=>mode==="booklet"||mode==="dup", vsplit=()=>mode==="pdup", twoUp=()=>land2()||vsplit(), sheetLand=()=>G.sheetW>G.sheetH, gapPx=()=>gapMM*PXMM; // land2: halves side by side; vsplit: halves one above the other
 let margMM=null; // page edges in mm {t,b,l,r}; null = the layout's own default
 const MG=()=>margMM?{t:margMM.t*PXMM,b:margMM.b*PXMM,l:margMM.l*PXMM,r:margMM.r*PXMM}:{t:G.my,b:G.my,l:G.mx,r:G.mx};
-const cw=()=>{const m=MG();return land2()?G.pageW-gapPx()/2-Math.max(m.l,m.r):G.pageW-m.l-m.r;}, ch=()=>{const m=MG();return G.pageH-m.t-m.b;};
+const cw=()=>{const m=MG();return land2()?G.pageW-gapPx()/2-Math.max(m.l,m.r):G.pageW-m.l-m.r;}, ch=()=>{const m=MG();return vsplit()?G.pageH-gapPx()/2-Math.max(m.t,m.b):G.pageH-m.t-m.b;};
 const store={get(k){try{return localStorage.getItem(k);}catch{return null;}},set(k,v){try{localStorage.setItem(k,v);}catch{}}};
 let toastT=null;
 function setStatus(t,warn){const s=$("status");s.textContent=t;s.className="status"+(warn?" warn":"");
@@ -21617,7 +21630,7 @@ function renderHeader(){
   const L=[];
   if(s)L.push(`<div class="s">${esc(s)}</div>`);
   if(examLine())L.push(`<div class="e">${esc(examLine())}</div>`);
-  if(mode!=="a4"){
+  if(land2()){
     if(c)L.push(`<div class="l">Class – ${esc(c)}</div>`);
     if(tm)L.push(`<div class="l">Time: ${esc(tm)}</div>`);
     if(sub)L.push(`<div class="l">Sub: ${esc(sub)}</div>`);
@@ -22347,16 +22360,18 @@ $("pasteGo").onclick=()=>{
 function pageOptions(){
   const sel=$("pages"), keep=sel.value;
   const opts=mode==="booklet"?[["4","৪ পাতা (১ কাগজ)"],["8","৮ পাতা (২ কাগজ)"],["0","যতটা লাগে"]]
-            :mode==="dup"?[["1","১ পাতা (শুধু সামনে)"],["2","২ পাতা (সামনে-পেছনে)"],["0","যতটা লাগে"]]
+            :(mode==="dup"||mode==="pdup")?[["1","১ পাতা (শুধু সামনে)"],["2","২ পাতা (সামনে-পেছনে)"],["0","যতটা লাগে"]]
                          :[["0","যতটা লাগে"],["1","১ পাতা"],["2","২ পাতা"],["4","৪ পাতা"]];
   sel.innerHTML=opts.map(([v,t])=>`<option value="${v}">${t}</option>`).join("");
   sel.value=opts.some(o=>o[0]===keep)?keep:opts[0][0];
   $("modenote").textContent=mode==="booklet"
     ?"A4 কাগজ আড়াআড়ি, মাঝখান থেকে দুভাগ। প্রথম কাগজের সামনে পাতা ৪ আর ১, পেছনে ২ আর ৩। দুপিঠে ছাপিয়ে ভাঁজ করলেই প্রশ্নপত্র।"
     :mode==="dup"?"ছোট প্রশ্নপত্রের জন্য। A4 আড়াআড়ি, দুই ভাগে একই প্রশ্ন। সামনে পাতা ১ | পাতা ১, পেছনে পাতা ২ | পাতা ২। মাঝখান থেকে কাটলে দুটো প্রশ্নপত্র।"
+    :mode==="pdup"?"খাড়া A4 কাগজ, ওপরে-নিচে দুই ভাগে একই প্রশ্ন। মাঝখান থেকে আড়াআড়ি কাটলে দুটো প্রশ্নপত্র।"
+    :mode==="land1"?"আড়াআড়ি A4, পুরো কাগজ জুড়ে একটা পাতা, লম্বা লাইনে লেখা।"
     :"খাড়া A4 পাতা। মাথায় Class, Sub আর Full Marks এক লাইনে, নিচে ডবল দাগ।";
-  $("cutWrap").hidden=mode!=="dup"; $("gapWrap").hidden=mode==="a4"; showGap(); if(typeof showMarg==="function") showMarg();
-  $("exportnote").textContent=mode==="dup"
+  $("cutWrap").hidden=!(mode==="dup"||mode==="pdup"); $("gapWrap").hidden=!twoUp(); showGap(); if(typeof showMarg==="function") showMarg();
+  $("exportnote").textContent=(mode==="dup"||mode==="pdup")
     ?"ছাপার পর মাঝখান থেকে কাটুন। ২ পাতা হলে দুপিঠে ছাপবেন, দুই ভাগে একই প্রশ্ন বলে কোন দিকে উল্টাবেন তা নিয়ে ভাবতে হবে না।"
     :mode==="booklet"
     ?"PDF ছাপার সময় \"দুপিঠে, ছোট দিক বরাবর উল্টে\" (Both sides, flip on short edge) বাছবেন। .docx-এ পাতা ভাঙা সামান্য সরে যেতে পারে, হুবহু ছাপার জন্য PDF নিন।"
@@ -22365,7 +22380,7 @@ function pageOptions(){
 function applyGeometry(){
   const d=$("doc"), sh=$("sheet");
   d.style.width=cw()+"px";
-  const m=MG(); sh.style.width=G.pageW+"px"; sh.style.padding=land2()?`${m.t}px ${G.pageW-m.l-cw()}px ${m.b}px ${m.l}px`:`${m.t}px ${m.r}px ${m.b}px ${m.l}px`;
+  const m=MG(); sh.style.width=G.pageW+"px"; sh.style.padding=land2()?`${m.t}px ${G.pageW-m.l-cw()}px ${m.b}px ${m.l}px`:vsplit()?`${m.t}px ${m.r}px ${G.pageH-m.t-ch()}px ${m.l}px`:`${m.t}px ${m.r}px ${m.b}px ${m.l}px`;
   d.style.fontFamily=`"${$("font").value}","Noto Serif Bengali","Times New Roman",serif`;
   document.documentElement.style.setProperty("--bw",$("ink").value||"600"); // darker letters print clearly
 }
@@ -22404,7 +22419,7 @@ function refit(){
   if(n&&mode==="booklet") total=Math.max(total,n);
   const sheets=mode==="booklet"?total/4:total;
   $("info").textContent=mode==="booklet"?`${bn(total)} পাতা · ${bn(sheets)} কাগজ · ${bn(fontPt)}pt${note}`
-    :mode==="dup"?`${bn(pageList.length)} পাতা · প্রতি কাগজে ২ কপি · ${bn(fontPt)}pt${note}`
+    :(mode==="dup"||mode==="pdup")?`${bn(pageList.length)} পাতা · প্রতি কাগজে ২ কপি · ${bn(fontPt)}pt${note}`
     :`${bn(pageList.length)} পাতা · ${bn(fontPt)}pt${note}`;
   const g=$("guides"); g.innerHTML="";
   pageList.forEach((p,i)=>{if(!i)return;const d=document.createElement("div");d.className="brk";d.style.top=(MG().t+p[0].offsetTop-3)+"px";d.innerHTML=`<i>পাতা ${bn(i+1)}</i>`;g.appendChild(d);});
@@ -22417,7 +22432,23 @@ function scaleEdit(){
   const w=$("stage").clientWidth||G.pageW, s=Math.min(1,w/G.pageW), sh=$("sheet");
   sh.style.transform=`scale(${s})`; $("stage").style.height=(sh.offsetHeight*s)+"px";
 }
-document.querySelectorAll('input[name=mode]').forEach(r=>r.onchange=()=>{mode=r.value;G=MODES[mode];pageOptions();renderHeader();refit();});
+document.querySelectorAll('input[name=mode]').forEach(r=>r.onchange=()=>{mode=r.value;G=MODES[mode];pageOptions();renderHeader();refit();showLayout();});
+/* paper direction + parts → one layout */
+const LAYOUT={"land|one":"land1","land|book":"booklet","land|dup":"dup","port|one":"a4","port|dup":"pdup"};
+const LAYOUT_ID={booklet:"mBook",a4:"mA4",dup:"mDup",land1:"mLand1",pdup:"mPdup"};
+function showLayout(){
+  const o={booklet:"land",dup:"land",land1:"land",a4:"port",pdup:"port"}[mode], p={booklet:"book",dup:"dup",pdup:"dup",land1:"one",a4:"one"}[mode];
+  $(o==="land"?"oLand":"oPort").checked=true; $({one:"pOne",book:"pBook",dup:"pDup"}[p]).checked=true;
+  $("pBook").disabled=o==="port"; $("pBook").parentElement.style.opacity=o==="port"?".45":"";
+  $("layoutName").textContent="এখন: "+{booklet:"আড়াআড়ি কাগজ · দুই ভাগ · বুকলেট (ভাঁজ)",dup:"আড়াআড়ি কাগজ · দুই ভাগ · একই প্রশ্ন দুবার (কেটে)",land1:"আড়াআড়ি কাগজ · এক ভাগ",a4:"খাড়া কাগজ · এক ভাগ",pdup:"খাড়া কাগজ · ওপরে-নিচে দুই ভাগ · একই প্রশ্ন দুবার (কেটে)"}[mode];
+}
+function pickLayout(){
+  const o=document.querySelector("input[name=orient]:checked").value; let p=document.querySelector("input[name=parts]:checked").value;
+  if(o==="port"&&p==="book"){ p="one"; setStatus("খাড়া কাগজে বুকলেট হয় না, তাই এক ভাগ বাছা হল।"); }
+  const m=LAYOUT[o+"|"+p]; const r=$(LAYOUT_ID[m]); r.checked=true; r.onchange();
+}
+document.querySelectorAll("input[name=orient],input[name=parts]").forEach(r=>r.addEventListener("change",pickLayout));
+showLayout();
 function showGap(){ $("gapV").textContent=bn(gapMM)+" মিমি"; $("gapM").disabled=gapMM<=0; $("gapP").disabled=gapMM>=60; }
 { const g=Number(store.get("gapMM")); if(store.get("gapMM")!==null&&isFinite(g)) gapMM=Math.max(0,Math.min(60,g)); }
 function setGap(d){ gapMM=Math.max(0,Math.min(60,gapMM+d)); store.set("gapMM",String(gapMM)); showGap(); refit();
@@ -22427,7 +22458,7 @@ $("gapM").onclick=()=>setGap(-5); $("gapP").onclick=()=>setGap(5);
 const mmOf=px=>Math.round(px/PXMM);
 function showMarg(){ const m=MG(); ["t","b","l","r"].forEach(k=>{$("mg"+k).textContent=bn(mmOf(m[k]))+" মিমি";});
   document.querySelectorAll("#margWrap [data-mk]").forEach(b=>{const v=mmOf(m[b.dataset.mk]);b.disabled=b.dataset.md<0?v<=3:v>=40;});
-  $("margNote").textContent=land2()?"বাঁয়ে = কাগজের একদম বাঁ ধার, ডানে = একদম ডান ধার। দুই ভাগের মাঝখানের ফাঁক ওপরের ঘর দিয়ে।":"";
+  $("margNote").textContent=land2()?"বাঁয়ে = কাগজের একদম বাঁ ধার, ডানে = একদম ডান ধার। দুই ভাগের মাঝখানের ফাঁক ওপরের ঘর দিয়ে।":vsplit()?"ওপরে = কাগজের একদম ওপরের ধার, নিচে = একদম নিচের ধার। দুই ভাগের মাঝখানের ফাঁক ওপরের ঘর দিয়ে।":"";
   $("margReset").disabled=!margMM; }
 { try{ const s=JSON.parse(store.get("margMM")||"null"); if(s&&["t","b","l","r"].every(k=>isFinite(s[k]))) margMM=s; }catch{} }
 document.querySelectorAll("#margWrap [data-mk]").forEach(b=>{ b.onclick=()=>{
@@ -22445,7 +22476,7 @@ window.addEventListener("resize",()=>{scaleEdit();if(!$("viewPane").hidden)scale
 
 /* ---------- printed sheets: booklet imposition ---------- */
 function order(total){ // which page sits on the left/right of each printed side
-  if(mode==="dup") return Array.from({length:total},(_,i)=>({cap:`${i%2?"পেছনের":"সামনের"} দিক (পাতা ${bn(i+1)} | পাতা ${bn(i+1)})`,pages:[i,i]}));
+  if(mode==="dup"||mode==="pdup") return Array.from({length:total},(_,i)=>({cap:`${i%2?"পেছনের":"সামনের"} দিক (পাতা ${bn(i+1)} ${mode==="pdup"?"ওপরে ও নিচে":"| পাতা "+bn(i+1)})`,pages:[i,i]}));
   if(mode!=="booklet") return Array.from({length:total},(_,i)=>({cap:`পাতা ${bn(i+1)}`,pages:[i]}));
   const sides=[];
   for(let s=0;s<total/4;s++){
@@ -22459,11 +22490,11 @@ function buildSheets(forPrint){
   let total=pages.length; if(mode==="booklet") total=Math.max(4,Math.ceil(total/4)*4,wanted()||0);
   while(pages.length<total) pages.push([]);
   return order(total).map(side=>{
-    const sh=document.createElement("div"); sh.className="psheet"+(mode!=="a4"&&!forPrint?" fold":"")+(mode==="dup"&&$("cutLine").checked?" cut":"");
+    const sh=document.createElement("div"); sh.className="psheet"+(vsplit()?" vsplit":"")+(twoUp()&&!forPrint?" fold":"")+((mode==="dup"||mode==="pdup")&&$("cutLine").checked?" cut":"");
     sh.style.width=G.sheetW+"px"; sh.style.height=G.sheetH+"px";
     side.pages.forEach((pi,j)=>{
       const pg=document.createElement("div"); pg.className="ppage";
-      pg.style.width=G.pageW+"px"; pg.style.height=G.pageH+"px"; const m=MG(); pg.style.padding=!land2()?`${m.t}px ${m.r}px ${m.b}px ${m.l}px`:j===0?`${m.t}px ${G.pageW-m.l-cw()}px ${m.b}px ${m.l}px`:`${m.t}px ${m.r}px ${m.b}px ${G.pageW-m.r-cw()}px`;
+      pg.style.width=G.pageW+"px"; pg.style.height=G.pageH+"px"; const m=MG(); pg.style.padding=vsplit()?(j===0?`${m.t}px ${m.r}px ${G.pageH-m.t-ch()}px ${m.l}px`:`${G.pageH-m.b-ch()}px ${m.r}px ${m.b}px ${m.l}px`):!land2()?`${m.t}px ${m.r}px ${m.b}px ${m.l}px`:j===0?`${m.t}px ${G.pageW-m.l-cw()}px ${m.b}px ${m.l}px`:`${m.t}px ${m.r}px ${m.b}px ${G.pageW-m.r-cw()}px`;
       const d=document.createElement("div"); d.className="doc";
       d.style.width=cw()+"px"; d.style.fontSize=fontPt+"pt"; d.style.fontFamily=$("doc").style.fontFamily;
       pages[pi].forEach(c=>d.appendChild(c.cloneNode(true)));
@@ -22481,7 +22512,7 @@ function buildPreview(){
     wrap.innerHTML=`<div class="pvcap">${s.cap}</div>`;
     const box=document.createElement("div"); box.className="pvbox"; box.appendChild(s.el); wrap.appendChild(box); pv.appendChild(wrap);
   });
-  $("viewnote").textContent=mode==="dup"?"ছাপার পর কাগজে যেমন থাকবে। মাঝখান থেকে কাটলে দুটো একই প্রশ্নপত্র।":mode==="booklet"?"ছাপার পর কাগজে যেমন থাকবে। মাঝের হালকা দাগে ভাঁজ (দাগটা ছাপা হবে না)।":"ছাপার পর পাতাগুলো যেমন থাকবে।";
+  $("viewnote").textContent=(mode==="dup"||mode==="pdup")?"ছাপার পর কাগজে যেমন থাকবে। মাঝখান থেকে কাটলে দুটো একই প্রশ্নপত্র।":mode==="booklet"?"ছাপার পর কাগজে যেমন থাকবে। মাঝের হালকা দাগে ভাঁজ (দাগটা ছাপা হবে না)।":"ছাপার পর পাতাগুলো যেমন থাকবে।";
   scalePreview();
 }
 function scalePreview(){
@@ -22919,7 +22950,7 @@ $("pdf").onclick=async()=>{
   if(!readyToExport()) return;
   refit(); await (document.fonts&&document.fonts.ready||Promise.resolve());
   // the real letters go to the printer (not a picture of them), so they stay sharp at any printer
-  const land=mode!=="a4", sheets=buildSheets(true);
+  const land=sheetLand(), sheets=buildSheets(true);
   let area=$("printArea"); if(area) area.remove();
   area=document.createElement("div"); area.id="printArea"; area.setAttribute("aria-hidden","true");
   area.className=land?"pland":"pport";
@@ -22986,7 +23017,7 @@ $("docx").onclick=async()=>{
   closeEq();closeFig(); if(!readyToExport()) return;
   if(!downloads||!window.docx||!window.JSZip||!mjReady()){setStatus("ফাইল বানানোর জিনিসপত্র এখনও লোড হয়নি। একটু পরে আবার চাপুন।",true);return;}
   refit(); closePick(); if(figEl) closeFig(); await flattenFigs(); setStatus("Word ফাইল তৈরি হচ্ছে…"); $("docx").disabled=true; $("docx").textContent="Word ফাইল তৈরি হচ্ছে…";
-  const D=window.docx, font=$("font").value, land=mode!=="a4";
+  const D=window.docx, font=$("font").value, land=sheetLand(), two=land2();
   const pt=land?fontPt*0.97:fontPt, size=Math.round(pt*2);
   const tw=px=>Math.round(px*15);
   const colW=tw(cw()), F={ascii:"Times New Roman",hAnsi:"Times New Roman",cs:font,eastAsia:font};
@@ -23044,7 +23075,7 @@ $("docx").onclick=async()=>{
   }
   const pagesB=pageList.map(p=>p.flatMap(el=>blockOf(el)));
   let children=[];
-  if(land){
+  if(two){
     let total=mode==="dup"?Math.max(1,pagesB.length):Math.max(4,Math.ceil(pagesB.length/4)*4,wanted()||0); while(pagesB.length<total)pagesB.push([]);
     const seq=order(total).flatMap(s=>s.pages); // left, right, left, right … as printed
     seq.forEach((pi,i)=>{const P=pagesB[pi].flatMap(toDocx);children.push(...(P.length?P:[new D.Paragraph({children:[]})])); if(i<seq.length-1) children.push(new D.Paragraph({spacing:sp,children:[new D.ColumnBreak()]}));});
@@ -23053,7 +23084,7 @@ $("docx").onclick=async()=>{
     styles:{default:{document:{run:{font:F,size,sizeComplexScript:size}}}},
     sections:[{properties:{page:{size:{width:11906,height:16838,orientation:land?D.PageOrientation.LANDSCAPE:D.PageOrientation.PORTRAIT},
         margin:{top:tw(MG().t),bottom:tw(MG().b),left:tw(MG().l),right:tw(MG().r)}},
-      ...(land?{column:{count:2,space:tw(gapPx()),separate:mode==="dup"&&$("cutLine").checked}}:{})},
+      ...(two?{column:{count:2,space:tw(gapPx()),separate:mode==="dup"&&$("cutLine").checked}}:{})},
       children:children.length?children:[new D.Paragraph("")]}]});
   try{
     const zip=await JSZip.loadAsync(await D.Packer.toBlob(doc));
@@ -23130,7 +23161,7 @@ window.addEventListener("pagehide",()=>{ saveNow(); });
 function applyPaper(meta,body){
   closeEq(); closeFig(); if(typeof tblMark==="function") tblMark(null);
   const set=body.set||{};
-  if(set.mode&&MODES[set.mode]){ mode=set.mode; G=MODES[mode]; const r={booklet:"mBook",a4:"mA4",dup:"mDup"}[mode]; if($(r))$(r).checked=true; }
+  if(set.mode&&MODES[set.mode]){ mode=set.mode; G=MODES[mode]; const r={booklet:"mBook",a4:"mA4",dup:"mDup",land1:"mLand1",pdup:"mPdup"}[mode]; if($(r))$(r).checked=true; if(typeof showLayout==="function") showLayout(); }
   pageOptions();
   if(set.pages!==undefined&&[...$("pages").options].some(o=>o.value===String(set.pages))) $("pages").value=String(set.pages);
   if(set.font&&[...$("font").options].some(o=>o.value===set.font)) $("font").value=set.font;
