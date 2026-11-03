@@ -239,6 +239,10 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 .marggrid{display:grid;grid-template-columns:auto auto 5.2em auto;gap:6px 8px;align-items:center;justify-content:start}
 .marggrid b{text-align:center;font-variant-numeric:tabular-nums}
 .marggrid .btn{padding:6px 14px}
+.wmbox{margin-top:10px;display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:10px}
+.wm{position:absolute;left:50%;top:50%;pointer-events:none;z-index:0;display:flex;flex-direction:column;align-items:center;gap:.2em;color:#000;font-weight:700;white-space:nowrap;line-height:1.1;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.wm img{display:block;filter:grayscale(1)}
+.ppage .doc{position:relative;z-index:1}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head><body>
@@ -306,7 +310,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২ নভেম্বর রাত (আড়াআড়ি/খাড়া, এক/দুই ভাগ)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৩ নভেম্বর (জলছাপ যুক্ত)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -508,6 +512,22 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
           <label>পূর্ণমান (F.M.)<input id="hFM" autocomplete="off"></label>
         </div>
         <p class="small" style="margin:6px 0 0">ছবিতে লেখা থাকলে নিজে থেকে ভরে যাবে। খালি ঘর ছাপা হবে না।</p>
+        <div class="wmbox" id="wmBox">
+          <b style="font-size:.92rem">জলছাপ (Watermark)</b>
+          <input class="libin" id="wmText" placeholder="যা লিখবেন তাই জলছাপ হবে, যেমন: গোপনীয় / স্কুলের নাম" autocomplete="off">
+          <div class="row">
+            <button class="btn" id="wmImgBtn">🖼 ছবি বা লোগো বাছুন</button>
+            <img id="wmThumb" alt="জলছাপের ছবি" hidden style="height:38px;max-width:90px;object-fit:contain;border:1px solid var(--line);border-radius:6px;background:#fff">
+            <button class="btn" id="wmImgDel" hidden>ছবি সরান</button>
+          </div>
+          <input type="file" id="wmFile" accept="image/*" hidden>
+          <div class="row">
+            <label class="small" for="wmDir">দিক</label><select id="wmDir"><option value="d">কোনাকুনি</option><option value="f">সোজা</option></select>
+            <label class="small" for="wmOp">গাঢ়তা</label><select id="wmOp"><option value="1">খুব হালকা</option><option value="2" selected>হালকা</option><option value="3">মাঝারি</option></select>
+            <label class="small" for="wmSize">মাপ</label><select id="wmSize"><option value="s">ছোট</option><option value="m" selected>মাঝারি</option><option value="l">বড়</option></select>
+          </div>
+          <span class="small">লেখা আর ছবি দুটোই দিলে ছবির নিচে লেখা বসবে। লেখা আর ছবি দুটোই না থাকলে জলছাপ নেই। Word ফাইলে জলছাপ যায় না, ছাপা আর PDF-এ যায়।</span>
+        </div>
       </div>
 
       <div class="step">
@@ -22422,6 +22442,7 @@ function refit(){
     :(mode==="dup"||mode==="pdup")?`${bn(pageList.length)} পাতা · প্রতি কাগজে ২ কপি · ${bn(fontPt)}pt${note}`
     :`${bn(pageList.length)} পাতা · ${bn(fontPt)}pt${note}`;
   const g=$("guides"); g.innerHTML="";
+  pageList.forEach((p,i)=>{const w=wmEl(G.pageW,ch()+MG().t+MG().b); if(w){ w.style.left=(MG().l+cw()/2)+"px"; w.style.top=(MG().t+((p[0]&&p[0].offsetTop)||0)+ch()/2)+"px"; g.appendChild(w); } });
   pageList.forEach((p,i)=>{if(!i)return;const d=document.createElement("div");d.className="brk";d.style.top=(MG().t+p[0].offsetTop-3)+"px";d.innerHTML=`<i>পাতা ${bn(i+1)}</i>`;g.appendChild(d);});
   scaleEdit();
   if(!$("viewPane").hidden) buildPreview();
@@ -22454,6 +22475,39 @@ function showGap(){ $("gapV").textContent=bn(gapMM)+" মিমি"; $("gapM").d
 function setGap(d){ gapMM=Math.max(0,Math.min(60,gapMM+d)); store.set("gapMM",String(gapMM)); showGap(); refit();
   setStatus(`মাঝের ফাঁক এখন ${bn(gapMM)} মিমি (প্রতি পাশে ${bn((gapMM/2).toFixed(1).replace(/\.0$/,""))} মিমি)। "ছাপার পাতা দেখুন"-এ মিলিয়ে নিন।`); }
 $("gapM").onclick=()=>setGap(-5); $("gapP").onclick=()=>setGap(5);
+/* ---------- watermark: words and/or a picture, faint, behind the questions on every page ---------- */
+var wmImg="";
+var WM_OP={"1":0.06,"2":0.11,"3":0.18}, WM_SZ={s:0.45,m:0.65,l:0.85};
+function wmNow(){ const t=$("wmText").value.trim(); return (t||wmImg)?{t,img:wmImg,dir:$("wmDir").value,op:$("wmOp").value,size:$("wmSize").value}:null; }
+function wmSet(w){ w=w||{}; $("wmText").value=w.t||""; wmImg=w.img||""; if(w.dir)$("wmDir").value=w.dir; if(w.op)$("wmOp").value=w.op; if(w.size)$("wmSize").value=w.size; wmShowThumb(); }
+function wmShowThumb(){ $("wmThumb").hidden=!wmImg; if(wmImg) $("wmThumb").src=wmImg; $("wmImgDel").hidden=!wmImg; }
+var wmCanvas=null;
+function wmEl(pw,ph){ // one watermark sized for a page of pw × ph px
+  const w=wmNow(); if(!w) return null;
+  const diag=w.dir==="d", f=WM_SZ[w.size]||0.65, span=diag?Math.hypot(pw,ph)*0.82:pw*0.92, target=span*f;
+  const el=document.createElement("div"); el.className="wm"; el.setAttribute("aria-hidden","true");
+  el.style.opacity=String(WM_OP[w.op]||0.11);
+  el.style.transform=`translate(-50%,-50%) rotate(${diag?-Math.atan2(ph,pw)*180/Math.PI:0}deg)`;
+  if(w.img){ const im=document.createElement("img"); im.src=w.img; im.alt=""; const s=Math.min(pw,ph)*f*(w.t?0.62:0.8); im.style.width=s+"px"; im.style.height=s+"px"; im.style.objectFit="contain"; el.appendChild(im); }
+  if(w.t){ const fam=($("doc").style.fontFamily||'"Noto Serif Bengali",serif');
+    wmCanvas=wmCanvas||document.createElement("canvas"); const cx=wmCanvas.getContext("2d"); cx.font=`700 100px ${fam}`;
+    const tw=Math.max(1,cx.measureText(w.t).width); let fs=100*target/tw; fs=Math.max(14,Math.min(fs,ph*0.3));
+    const sp=document.createElement("span"); sp.textContent=w.t; sp.style.fontSize=fs+"px"; sp.style.fontFamily=fam; el.appendChild(sp); }
+  return el;
+}
+function wmChanged(){ try{ store.set("wmLast",JSON.stringify(wmNow())); }catch{} refit(); }
+$("wmText").addEventListener("input",()=>{ clearTimeout(window.__wmT); window.__wmT=setTimeout(wmChanged,350); });
+["wmDir","wmOp","wmSize"].forEach(id=>$(id).onchange=wmChanged);
+$("wmImgBtn").onclick=()=>$("wmFile").click();
+$("wmFile").onchange=async()=>{ const f=$("wmFile").files[0]; $("wmFile").value=""; if(!f) return;
+  try{ const url=await new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=no;r.readAsDataURL(f);});
+    const im=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=no;i.src=url;});
+    const k=Math.min(1,700/Math.max(im.width,im.height)), c=document.createElement("canvas"); c.width=Math.round(im.width*k); c.height=Math.round(im.height*k);
+    c.getContext("2d").drawImage(im,0,0,c.width,c.height); wmImg=c.toDataURL("image/png"); wmShowThumb(); wmChanged();
+    setStatus("জলছাপের ছবি বসানো হল। প্রতিটা পাতার মাঝখানে হালকা করে থাকবে।");
+  }catch{ setStatus("ছবিটা খোলা গেল না। অন্য ছবি দিয়ে চেষ্টা করুন।",true); } };
+$("wmImgDel").onclick=()=>{ wmImg=""; wmShowThumb(); wmChanged(); };
+{ try{ const w=JSON.parse(store.get("wmLast")||"null"); if(w) wmSet(w); }catch{} }
 /* page edges: each side 3–40 mm, 1 mm a press */
 const mmOf=px=>Math.round(px/PXMM);
 function showMarg(){ const m=MG(); ["t","b","l","r"].forEach(k=>{$("mg"+k).textContent=bn(mmOf(m[k]))+" মিমি";});
@@ -22500,6 +22554,7 @@ function buildSheets(forPrint){
       pages[pi].forEach(c=>d.appendChild(c.cloneNode(true)));
       pg.appendChild(d);
       if(mode==="booklet"&&!forPrint){const nn=document.createElement("div");nn.className="num";nn.textContent=`পাতা ${bn(pi+1)}`;pg.appendChild(nn);}
+      { const w=wmEl(G.pageW,G.pageH); if(w) pg.appendChild(w); }
       sh.appendChild(pg);
     });
     return {cap:side.cap,el:sh};
@@ -23131,7 +23186,7 @@ const DB=(()=>{
 let curId=null, lastSig=null, saveT=null, persistAsked=false;
 const newId=()=>"p"+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 function hdrNow(){const h={};HF.forEach(id=>h[id]=$(id).value);return h;}
-function setNow(){return {mode,pages:$("pages").value,font:$("font").value,cut:$("cutLine").checked,gap:gapMM,marg:margMM};}
+function setNow(){return {mode,pages:$("pages").value,font:$("font").value,cut:$("cutLine").checked,gap:gapMM,marg:margMM,wm:wmNow()};}
 function autoName(h){const parts=[h.hSub,h.hClass&&("Class "+h.hClass),h.hExam].map(x=>(x||"").trim()).filter(Boolean);return parts.join(" – ");}
 function showName(m){return (m.name||"").trim()||m.auto||"নাম ছাড়া প্রশ্নপত্র";}
 function whenText(t){const d=new Date(t),now=new Date();
@@ -23167,6 +23222,7 @@ function applyPaper(meta,body){
   if(set.font&&[...$("font").options].some(o=>o.value===set.font)) $("font").value=set.font;
   if(set.cut!==undefined) $("cutLine").checked=!!set.cut;
   if(set.gap!==undefined&&isFinite(set.gap)) gapMM=Math.max(0,Math.min(60,Number(set.gap))); showGap();
+  if(set.wm!==undefined&&typeof wmSet==="function") wmSet(set.wm);
   if(set.marg!==undefined){ const s=set.marg; margMM=s&&["t","b","l","r"].every(k=>isFinite(s[k]))?{t:+s.t,b:+s.b,l:+s.l,r:+s.r}:null; } if(typeof showMarg==="function") showMarg();
   const h=body.hdr||{}; HF.forEach(id=>{ if(h[id]!==undefined){ $(id).value=h[id]; store.set(id,h[id]); } });
   sampleHeader=false;
