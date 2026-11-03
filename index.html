@@ -313,7 +313,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৩ নভেম্বর রাত (হিন্দি, আরবি, সংস্কৃত বলা)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৩ নভেম্বর রাত (সংস্কৃত দেবনাগরীতেও)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -430,6 +430,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
           <label><input type="radio" name="mlang" value="hi-IN"><span>हिन्दी</span></label>
           <label><input type="radio" name="mlang" value="ar-SA"><span>العربية</span></label>
           <label><input type="radio" name="mlang" value="sa"><span>সংস্কৃত<br><small>বাংলা হরফে</small></span></label>
+          <label><input type="radio" name="mlang" value="sa-dev"><span>संस्कृतम्<br><small>দেবনাগরী হরফে</small></span></label>
         </div>
         <button class="btn wide micbtn" id="micDict" style="margin-top:6px">🎤 বলুন, লেখা হতে থাকবে</button>
         <button class="btn primary" id="dictGo" style="margin-top:8px">নম্বর দিয়ে সাজান</button>
@@ -646,7 +647,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
           <button class="btn" id="boxBtn">☐ বক্স</button>
           <span class="fmtbar" role="group" aria-label="লেখা সাজান"><button class="btn fmt" id="fmtB" title="বোল্ড (মোটা)"><b>B</b></button><button class="btn fmt" id="fmtI" title="তেরছা (ইটালিক)"><i style="font-family:serif">I</i></button><button class="btn fmt" id="fmtUp" title="অক্ষর বড়">A<sup>+</sup></button><button class="btn fmt" id="fmtDn" title="অক্ষর ছোট">A<sup>−</sup></button><button class="btn fmt" id="fmtRst" title="মাপ সাধারণ">A</button></span>
           <button class="btn micbtn" id="micDoc">🎤 বলে লিখুন</button>
-          <select id="micLang" aria-label="কোন ভাষায় বলবেন" title="কোন ভাষায় বলবেন"><option value="bn-IN">🎤 বাংলা</option><option value="en-IN">🎤 English</option><option value="hi-IN">🎤 हिन्दी</option><option value="ar-SA">🎤 العربية</option><option value="sa">🎤 সংস্কৃত</option></select>
+          <select id="micLang" aria-label="কোন ভাষায় বলবেন" title="কোন ভাষায় বলবেন"><option value="bn-IN">🎤 বাংলা</option><option value="en-IN">🎤 English</option><option value="hi-IN">🎤 हिन्दी</option><option value="ar-SA">🎤 العربية</option><option value="sa">🎤 সংস্কৃত (বাংলা হরফে)</option><option value="sa-dev">🎤 संस्कृतम् (দেবনাগরী)</option></select>
           <button class="btn" id="findBtn">🔍 খুঁজুন ও বদলান</button>
           <button class="btn" id="symBtn">∑ অংকের চিহ্ন</button>
           <button class="btn" id="rboxBtn">☐ লাইনের শেষে ডানদিকে বক্স</button>
@@ -22681,7 +22682,7 @@ function micStart(kind){
     const prev=m.node.previousSibling; m.lead=prev&&prev.nodeType===3&&prev.nodeValue&&!/\s$/.test(prev.nodeValue)?" ":"";
   }
   mic=m; $(kind==="dict"?"micDict":"micDoc").classList.add("on");
-  micPill({"bn-IN":"শুনছি… বলুন","en-IN":"Listening… speak","hi-IN":"सुन रहा हूँ… बोलिए","ar-SA":"أستمع… تحدث","sa":"শুনছি… সংস্কৃতে বলুন"}[lang]||"শুনছি…");
+  micPill({"bn-IN":"শুনছি… বলুন","en-IN":"Listening… speak","hi-IN":"सुन रहा हूँ… बोलिए","ar-SA":"أستمع… تحدث","sa":"শুনছি… সংস্কৃতে বলুন","sa-dev":"शृणोमि… संस्कृते वदतु"}[lang]||"শুনছি…");
   m.quiet=0; micMeter(m);
   micRun();
 }
@@ -22707,8 +22708,8 @@ async function micMeter(m){ // a small bar that moves with your voice, so you ca
 }
 function micRun(){ // one sentence per round (steadier on Android), restarts by itself until "থামান"
   const m=mic; if(!m) return;
-  const rec=new SR(); m.rec=rec; rec.lang=m.lang==="sa"?"hi-IN":m.lang; // Sanskrit: heard as Hindi, then written in Bengali letters rec.interimResults=true; rec.continuous=false; rec.maxAlternatives=1;
-  rec.onresult=e=>{ m.quiet=0; if(m.lang) micPill({"bn-IN":"শুনছি… বলুন","en-IN":"Listening… speak","hi-IN":"सुन रहा हूँ… बोलिए","ar-SA":"أستمع… تحدث","sa":"শুনছি… সংস্কৃতে বলুন"}[m.lang]||"শুনছি…"); let fin="",int=""; for(let i=0;i<e.results.length;i++){ const s=e.results[i][0].transcript; if(e.results[i].isFinal) fin+=s; else int+=s; }
+  const rec=new SR(); m.rec=rec; rec.lang=(m.lang==="sa"||m.lang==="sa-dev")?"hi-IN":m.lang; // Sanskrit: heard as Hindi, then written in Bengali letters rec.interimResults=true; rec.continuous=false; rec.maxAlternatives=1;
+  rec.onresult=e=>{ m.quiet=0; if(m.lang) micPill({"bn-IN":"শুনছি… বলুন","en-IN":"Listening… speak","hi-IN":"सुन रहा हूँ… बोलिए","ar-SA":"أستمع… تحدث","sa":"শুনছি… সংস্কৃতে বলুন","sa-dev":"शृणोमि… संस्कृते वदतु"}[m.lang]||"শুনছি…"); let fin="",int=""; for(let i=0;i<e.results.length;i++){ const s=e.results[i][0].transcript; if(e.results[i].isFinal) fin+=s; else int+=s; }
     if(m.lang==="sa"){ fin=deva2beng(fin); int=deva2beng(int); }
     m.interim=int.trim(); if(fin.trim()){ m.final=(m.final+" "+fin.trim()).trim(); m.interim=""; } micShow(); };
   rec.onerror=e=>{ const c=e.error; m.lastErr=c;
