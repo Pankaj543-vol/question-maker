@@ -86,7 +86,9 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 .doc h2{font-size:1.12em;font-weight:700;margin:.35em 0 .3em;text-align:center}
 .doc h3.sec{font-size:1em;font-weight:700;margin:.6em 0 .25em;padding-bottom:1px;border-bottom:1px solid #999}
 .doc .mk{float:right;font-weight:700;margin-left:1em;text-indent:0}
-.doc .hdr{text-align:center;margin-bottom:.5em;line-height:1.28}
+.doc .hdr{text-align:center;margin-bottom:.5em;line-height:1.28;position:relative}
+.doc .hdr .by{font-size:.72em;font-weight:500;line-height:1.2;color:#333;margin-bottom:.15em}
+.doc .hdr .by.r{text-align:right}.doc .hdr .by.l{text-align:left}
 .doc .hdr .s{font-size:1.4em;font-weight:700}
 .doc .hdr .e,.doc .hdr .l{font-weight:700;font-size:1.05em}
 .doc .hdr .tri{display:flex;justify-content:space-between;gap:1em;font-weight:700;font-size:1.05em;border-bottom:3px double #000;padding-bottom:2px;margin-top:.15em}
@@ -310,7 +312,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৩ নভেম্বর রাত (বাংলা/English বলার বোতাম)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৩ নভেম্বর রাত (প্রশ্নকর্তার নাম কোণে)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -514,6 +516,8 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
           <label>বিষয় (Sub)<input id="hSub" autocomplete="off"></label>
           <label>সময় (Time)<input id="hTime" autocomplete="off"></label>
           <label>পূর্ণমান (F.M.)<input id="hFM" autocomplete="off"></label>
+          <label class="full">প্রশ্নকর্তার নাম (শিরোনামের কোণে ছোট করে)<input id="hBy" autocomplete="off" placeholder="যেমন: প্রশ্নকর্তা – পঙ্কজ কুমার মণ্ডল"></label>
+          <label>কোন কোণে<select id="hByPos"><option value="r">ওপরে ডানে</option><option value="l">ওপরে বাঁয়ে</option></select></label>
         </div>
         <p class="small" style="margin:6px 0 0">ছবিতে লেখা থাকলে নিজে থেকে ভরে যাবে। খালি ঘর ছাপা হবে না।</p>
         <div class="wmbox" id="wmBox">
@@ -21624,7 +21628,7 @@ function insertHTML(target,html){
 function clearExample(){ if(hasExample){$("doc").innerHTML="";hasExample=false;if(sampleHeader){HF.forEach(id=>$(id).value="");$("hYear").value=store.get("hYear")||thisYear;sampleHeader=false;}renderHeader();} }
 
 /* ---------- header (school name etc.) ---------- */
-const HF=["hSchool","hExam","hClass","hSub","hTime","hFM","hYear"];
+const HF=["hSchool","hExam","hClass","hSub","hTime","hFM","hYear","hBy","hByPos"];
 const thisYear=String(new Date().getFullYear());
 function splitYear(H){ // "Test Examination – 2026" → exam + year
   if(!H.hExam) return H;
@@ -21646,7 +21650,7 @@ function fillHeader(vals){ // from the photo: only fills empty boxes (the year i
 function hv(id){return $(id).value.trim();}
 function renderHeader(){
   const doc=$("doc"); let h=doc.querySelector(":scope > .hdr");
-  const any=HF.filter(id=>id!=="hYear").some(id=>hv(id));
+  const any=HF.filter(id=>id!=="hYear"&&id!=="hByPos").some(id=>hv(id));
   if(!any){if(h)h.remove();return;}
   if(!h){h=document.createElement("div");h.className="hdr";h.contentEditable="false";doc.prepend(h);}
   else if(doc.firstElementChild!==h) doc.prepend(h);
@@ -21663,6 +21667,7 @@ function renderHeader(){
     if(tm)L.push(`<div class="l">Time: ${esc(tm)}</div>`);
     if(c||sub||fm)L.push(`<div class="tri"><span>${c?"Class – "+esc(c):""}</span><span>${sub?"Sub – "+esc(sub):""}</span><span>${fm?"Full Marks: "+esc(fm):""}</span></div>`);
   }
+  if(hv("hBy")) L.unshift(`<div class="by ${$("hByPos").value==="l"?"l":"r"}">${esc(hv("hBy"))}</div>`); // setter's name, small, in the heading's corner
   h.innerHTML=L.join("");
 }
 HF.forEach(id=>{const v=store.get(id);if(v!==null)$(id).value=v;
@@ -23093,9 +23098,10 @@ $("docx").onclick=async()=>{
   function header(){
     const P=(t,s,extra={})=>new D.Paragraph({alignment:C,spacing:{line:276,before:0,after:30},children:[TR(t,{bold:true,size:s})],...extra});
     const out=[];
+    if(hv("hBy"))out.push(new D.Paragraph({alignment:$("hByPos").value==="l"?D.AlignmentType.LEFT:D.AlignmentType.RIGHT,spacing:{line:240,before:0,after:0},children:[TR(hv("hBy"),{size:Math.round(size*0.75)})]}));
     if(hv("hSchool"))out.push(P(hv("hSchool"),Math.round(size*1.4)));
     if(examLine())out.push(P(examLine(),Math.round(size*1.05)));
-    if(land){
+    if(two){
       if(hv("hClass"))out.push(P("Class – "+hv("hClass"),Math.round(size*1.05)));
       if(hv("hTime"))out.push(P("Time: "+hv("hTime"),Math.round(size*1.05)));
       if(hv("hSub"))out.push(P("Sub: "+hv("hSub"),Math.round(size*1.05)));
