@@ -313,7 +313,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৩ নভেম্বর রাত ৯টা (মাইকের দাগ)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৩ নভেম্বর রাত ৯:২০ (মাইকের সমস্যা দেখায়)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -22702,12 +22702,14 @@ function micRun(){ // one sentence per round (steadier on Android), restarts by 
   const rec=new SR(); m.rec=rec; rec.lang=m.lang; rec.interimResults=true; rec.continuous=false; rec.maxAlternatives=1;
   rec.onresult=e=>{ m.quiet=0; if(m.lang) micPill(m.lang==="bn-IN"?"শুনছি… বলুন":"Listening… speak"); let fin="",int=""; for(let i=0;i<e.results.length;i++){ const s=e.results[i][0].transcript; if(e.results[i].isFinal) fin+=s; else int+=s; }
     m.interim=int.trim(); if(fin.trim()){ m.final=(m.final+" "+fin.trim()).trim(); m.interim=""; } micShow(); };
-  rec.onerror=e=>{ const c=e.error;
+  rec.onerror=e=>{ const c=e.error; m.lastErr=c;
+    if(c&&!["no-speech","aborted"].includes(c)) micPill("সমস্যা: "+({"network":"ইন্টারনেট/Google-এর কথা শোনার পরিষেবা পাওয়া যাচ্ছে না","not-allowed":"মাইকের অনুমতি নেই","service-not-allowed":"এই ব্রাউজারে কথা শোনা বন্ধ করা আছে","audio-capture":"মাইক পাওয়া যাচ্ছে না","language-not-supported":"এই ভাষা চলছে না"}[c]||c));
     if(c==="not-allowed"||c==="service-not-allowed"){ m.live=false; setStatus("মাইকের অনুমতি নেই। ঠিকানার পাশের 🔒 চিহ্নে চেপে Microphone → Allow করুন, অথবা ফোনের Settings-এ Chrome-কে মাইকের অনুমতি দিন।",true); }
     else if(c==="network"){ m.live=false; setStatus("মুখে বলে লেখার জন্য ইন্টারনেট লাগবে।",true); }
     else if(c==="audio-capture"){ m.live=false; setStatus("মাইক পাওয়া যাচ্ছে না। মাইক বন্ধ করা আছে কিনা দেখুন।",true); }
     else if(c==="language-not-supported"){ m.live=false; setStatus("এই ভাষা এখানে চলছে না। ভাষা বদলে দেখুন।",true); }
     else if(c==="no-speech"){ m.quiet=(m.quiet||0)+1; if(m.quiet>=2) micPill("কোনো কথা শুনতে পাচ্ছি না। মাইকের কাছে জোরে বলুন। সাদা দাগটা না নড়লে ল্যাপটপের মাইক বন্ধ বা ভুল মাইক বাছা আছে।"); } };
+  rec.onstart=()=>{ m.started=(m.started||0)+1; };
   rec.onend=()=>{ if(mic===m&&m.live){ m.interim=""; micShow(); try{ micRun(); }catch{ micStop(); } } else if(mic===m) micStop(); };
   try{ rec.start(); }catch{ setTimeout(()=>{ if(mic===m&&m.live){ try{rec.start();}catch{micStop();} } },300); }
 }
