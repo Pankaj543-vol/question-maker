@@ -426,7 +426,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৩ নভেম্বর রাত ১০টা (মালিকের কোড বানানো)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৩ নভেম্বর রাত ১১টা (ছবি কার্সরের জায়গায়)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -22046,6 +22046,7 @@ $("tblDel").onclick=()=>tblDo(t=>{t.remove();tblMark(null);});
 $("tblDone").onclick=()=>tblMark(null);
 $("doc").addEventListener("pointerdown",e=>{const b=topBlock(e.target);if(b)lastBlock=b;});
 
+function paintAll(el){el.querySelectorAll("[data-tex]").forEach(paintMath);}
 function figHTML(dataUrl,w){return `<figure class="fi" contenteditable="false" data-w="${(w||0.6).toFixed(2)}"><img alt="চিত্র" src="${dataUrl}"></figure>`;}
 function placeAfter(anchor,html){
   const frag=document.createElement("div");frag.innerHTML=html;frag.querySelectorAll("[data-tex]").forEach(paintMath);
@@ -22058,8 +22059,28 @@ async function insertFile(f){
   if(!f) return; const url=await openCropper(f); if(!url){ setStatus("ছবি বসানো বাতিল হল।"); return; }
   if(needOwnPaper()) return;
   snapshot(); clearExample();
-  const at=lastBlock&&lastBlock.isConnected&&lastBlock.parentNode===$("doc")?lastBlock:null;
-  const nodes=placeAfter(at,figHTML(url,0.6));
+  let at=lastBlock&&lastBlock.isConnected&&lastBlock.parentNode===$("doc")?lastBlock:null;
+  let nodes=null;
+  // exactly where the cursor is: a line is split there and the picture goes in between
+  const r=lastRange&&at&&/^(P|H2|H3)$/.test(at.tagName)&&!at.classList.contains("hdr")&&at.contains(lastRange.startContainer)?lastRange.cloneRange():null;
+  if(r){
+    r.collapse(true);
+    const head=document.createRange(); head.setStart(at,0); head.setEnd(r.startContainer,r.startOffset);
+    const tail=document.createRange(); tail.setStart(r.startContainer,r.startOffset); tail.setEnd(at,at.childNodes.length);
+    const txt=x=>x.toString().replace(/[\s\u200B]/g,"");
+    const hc=head.cloneContents(); [...hc.querySelectorAll(".mk")].forEach(x=>x.remove());
+    const ht=hc.textContent.replace(/[\s\u200B]/g,""); // only a question number before the cursor counts as the start of the line
+    if((!ht||/^[(\[]?[0-9০-৯]{1,3}(?:[.।][0-9০-৯]{1,3})?[.)।:]?$|^[(\[]?(?:[a-hক-ঙ]|[ivx]{1,4})[.)]$/.test(ht))&&!hc.querySelector("[data-tex],img")&&at.textContent.trim()!==""){
+      // cursor at the very start of the line: picture above that line
+      const frag=document.createElement("div"); frag.innerHTML=figHTML(url,0.6); paintAll(frag); nodes=[...frag.childNodes]; at.before(...nodes);
+      nodes.forEach(n=>{if(n.matches&&n.matches("figure.fi")){figLayout(n);const im=n.querySelector("img");im.onload=()=>refit();}});
+    }else if(txt(tail)||tail.cloneContents().querySelector("[data-tex],img")){
+      const rest=tail.extractContents(); const mk=[...rest.children].find(e=>e.classList.contains("mk")); if(mk) at.prepend(mk);
+      const second=document.createElement(at.tagName); second.className=at.className.replace(/\bq\b/,"opt").trim(); second.appendChild(rest);
+      at.after(second);
+    }
+  }
+  if(!nodes) nodes=placeAfter(at,figHTML(url,0.6));
   hasExample=false; refit();
   const fig=nodes.find(n=>n.matches&&n.matches("figure.fi")); if(fig) fig.scrollIntoView({block:"center"});
   setStatus(at?"ছবি বসানো হল, যে লাইনে ট্যাপ করেছিলেন তার নিচে। ছবিতে ট্যাপ করে বাঁয়ে/ডানে রাখা বা ভেতরে লেখা যায়।":"ছবি একদম শেষে বসানো হল (কোনো লাইনে আগে ট্যাপ করা ছিল না)। দরকার হলে ছবিতে ট্যাপ করে সরান বা মুছুন।");
