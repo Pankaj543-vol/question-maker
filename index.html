@@ -426,7 +426,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৩ নভেম্বর রাত ১১টা (ছবি কার্সরের জায়গায়)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৩ নভেম্বর রাত ১১:২৫ (জোড়া ছবি সোজা বসে)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -22055,8 +22055,8 @@ function placeAfter(anchor,html){
   nodes.forEach(n=>{if(n.matches&&n.matches("figure.fi")){figLayout(n);const im=n.querySelector("img");im.onload=()=>refit();}});
   return nodes;
 }
-async function insertFile(f){
-  if(!f) return; const url=await openCropper(f); if(!url){ setStatus("ছবি বসানো বাতিল হল।"); return; }
+async function insertFile(f,given){
+  if(!f&&!given) return; const url=given||await openCropper(f); if(!url){ setStatus("ছবি বসানো বাতিল হল।"); return; }
   if(needOwnPaper()) return;
   snapshot(); clearExample();
   let at=lastBlock&&lastBlock.isConnected&&lastBlock.parentNode===$("doc")?lastBlock:null;
@@ -22222,7 +22222,9 @@ function showPlan(p){
   cmdPlanFn=p.bad?null:p.run;
 }
 $("cmdGo").onclick=async()=>{
-  const c=$("cmd").value.trim(); if(!c){setStatus("আগে নির্দেশটা লিখুন।",true);return;}
+  const c=$("cmd").value.trim();
+  if(!c&&cmdImg){ const u=cmdImg; cmdImg=null; $("cmdPicNote").textContent="ছবি জোড়া নেই"; return insertFile(null,u); } // a picture and no words: put it where the cursor is
+  if(!c){setStatus("আগে নির্দেশটা লিখুন।",true);return;}
   if(hasExample){showPlan({desc:"এখন শুধু নমুনা আছে। আগে নিজের প্রশ্নপত্র আনুন, তারপর নির্দেশ দিন।",bad:true});return;}
   let p=planCommand(c);
   if(!p){
