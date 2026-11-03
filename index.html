@@ -212,6 +212,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 .lockbox a.btn{text-decoration:none;display:inline-block}
 .micbtn.on{background:#c0392b!important;color:#fff!important;border-color:#c0392b!important}
 .micpill{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:75;background:#c0392b;color:#fff;border-radius:99px;padding:9px 16px;font-size:.92rem;box-shadow:0 6px 20px rgba(0,0,0,.3);display:flex;gap:10px;align-items:center;max-width:92vw}
+.micpill .miclvl{display:inline-block;width:46px;height:10px;border-radius:5px;background:rgba(255,255,255,.35);overflow:hidden}.micpill .miclvl i{display:block;height:100%;width:0;background:#fff;transition:width .08s}
 .micpill button{border:0;background:#fff;color:#c0392b;border-radius:99px;padding:4px 12px;font:inherit;font-weight:600;cursor:pointer}
 .fmtbar{display:inline-flex;gap:0;border:1px solid var(--line);border-radius:7px;overflow:hidden}
 .fmtbar .fmt{border:0;border-radius:0;border-right:1px solid var(--line);min-width:40px;padding:8px 10px}
@@ -312,7 +313,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৩ নভেম্বর রাত (প্রশ্নকর্তার নাম কোণে)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৩ নভেম্বর রাত ৯টা (মাইকের দাগ)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -22657,7 +22658,7 @@ const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
 let mic=null; // {target, rec, ...}
 function micPill(t){ let p=$("micpill"); if(!t){ if(p) p.remove(); return; }
   if(!p){ p=document.createElement("div"); p.id="micpill"; p.className="micpill"; p.setAttribute("role","status");
-    p.innerHTML='<span id="micTxt"></span><button type="button" id="micStop">থামান</button>'; document.body.appendChild(p);
+    p.innerHTML='<span class="miclvl" aria-hidden="true"><i id="micLvl"></i></span><span id="micTxt"></span><button type="button" id="micStop">থামান</button>'; document.body.appendChild(p);
     $("micStop").onclick=()=>micStop(); }
   $("micTxt").textContent=t; }
 function micStart(kind){
@@ -22678,6 +22679,7 @@ function micStart(kind){
   }
   mic=m; $(kind==="dict"?"micDict":"micDoc").classList.add("on");
   micPill(lang==="bn-IN"?"শুনছি… বলুন":"Listening… speak");
+  m.quiet=0; micMeter(m);
   micRun();
 }
 function micShow(){
@@ -22685,21 +22687,33 @@ function micShow(){
   if(m.kind==="dict"){ const t=$("dict"); const sep=m.before&&!/\s$/.test(m.before)&&txt?" ":""; t.value=m.before+sep+txt+m.after; const pos=(m.before+sep+txt).length; try{t.setSelectionRange(pos,pos);}catch{} }
   else if(m.node){ m.node.nodeValue=txt?m.lead+txt:""; refitSoon(); }
 }
+async function micMeter(m){ // a small bar that moves with your voice, so you can see the microphone hears you
+  try{
+    const st=await navigator.mediaDevices.getUserMedia({audio:true}); if(mic!==m){ st.getTracks().forEach(t=>t.stop()); return; }
+    const ac=new (window.AudioContext||window.webkitAudioContext)(), src=ac.createMediaStreamSource(st), an=ac.createAnalyser(); an.fftSize=512; src.connect(an);
+    const buf=new Uint8Array(an.fftSize); m.meter={st,ac};
+    const tick=()=>{ if(mic!==m) return; an.getByteTimeDomainData(buf); let mx=0; for(const v of buf) mx=Math.max(mx,Math.abs(v-128));
+      const el=$("micLvl"); if(el) el.style.width=Math.min(100,mx*2.2)+"%"; requestAnimationFrame(tick); };
+    tick();
+  }catch(e){ if(mic===m) micPill("মাইক খোলা যাচ্ছে না। ল্যাপটপে মাইকের অনুমতি দেখুন।"); }
+}
 function micRun(){ // one sentence per round (steadier on Android), restarts by itself until "থামান"
   const m=mic; if(!m) return;
   const rec=new SR(); m.rec=rec; rec.lang=m.lang; rec.interimResults=true; rec.continuous=false; rec.maxAlternatives=1;
-  rec.onresult=e=>{ let fin="",int=""; for(let i=0;i<e.results.length;i++){ const s=e.results[i][0].transcript; if(e.results[i].isFinal) fin+=s; else int+=s; }
+  rec.onresult=e=>{ m.quiet=0; if(m.lang) micPill(m.lang==="bn-IN"?"শুনছি… বলুন":"Listening… speak"); let fin="",int=""; for(let i=0;i<e.results.length;i++){ const s=e.results[i][0].transcript; if(e.results[i].isFinal) fin+=s; else int+=s; }
     m.interim=int.trim(); if(fin.trim()){ m.final=(m.final+" "+fin.trim()).trim(); m.interim=""; } micShow(); };
   rec.onerror=e=>{ const c=e.error;
     if(c==="not-allowed"||c==="service-not-allowed"){ m.live=false; setStatus("মাইকের অনুমতি নেই। ঠিকানার পাশের 🔒 চিহ্নে চেপে Microphone → Allow করুন, অথবা ফোনের Settings-এ Chrome-কে মাইকের অনুমতি দিন।",true); }
     else if(c==="network"){ m.live=false; setStatus("মুখে বলে লেখার জন্য ইন্টারনেট লাগবে।",true); }
     else if(c==="audio-capture"){ m.live=false; setStatus("মাইক পাওয়া যাচ্ছে না। মাইক বন্ধ করা আছে কিনা দেখুন।",true); }
-    else if(c==="language-not-supported"){ m.live=false; setStatus("এই ভাষা এখানে চলছে না। ভাষা বদলে দেখুন।",true); } };
+    else if(c==="language-not-supported"){ m.live=false; setStatus("এই ভাষা এখানে চলছে না। ভাষা বদলে দেখুন।",true); }
+    else if(c==="no-speech"){ m.quiet=(m.quiet||0)+1; if(m.quiet>=2) micPill("কোনো কথা শুনতে পাচ্ছি না। মাইকের কাছে জোরে বলুন। সাদা দাগটা না নড়লে ল্যাপটপের মাইক বন্ধ বা ভুল মাইক বাছা আছে।"); } };
   rec.onend=()=>{ if(mic===m&&m.live){ m.interim=""; micShow(); try{ micRun(); }catch{ micStop(); } } else if(mic===m) micStop(); };
   try{ rec.start(); }catch{ setTimeout(()=>{ if(mic===m&&m.live){ try{rec.start();}catch{micStop();} } },300); }
 }
 function micStop(){
   const m=mic; if(!m) return; mic=null; m.live=false; try{ m.rec&&m.rec.abort(); }catch{}
+  try{ if(m.meter){ m.meter.st.getTracks().forEach(t=>t.stop()); m.meter.ac.close(); } }catch{}
   m.interim=""; mic=m; micShow(); mic=null;
   ["micDict","micDoc"].forEach(id=>$(id)&&$(id).classList.remove("on")); micPill(null);
   if(m.kind==="doc"&&m.node){ if(!m.node.nodeValue) m.node.remove(); else{ const a=document.createRange(); a.setStartAfter(m.node); a.collapse(true); lastRange=a; hasExample=false; refit(); } }
