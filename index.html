@@ -292,11 +292,13 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
     el.style.color=left<=15?"var(--warn)":"var(--accent)";
     el.textContent=`${data.n||"সদস্য"}-এর নামে · ${forever?"মেয়াদ চিরকাল":dtxt(data.e)+" পর্যন্ত"}`+(left<=15?` · আর ${bn(Math.max(0,left))} দিন বাকি, নতুন কোড নিয়ে রাখুন`:"");
   }
+  window.__pqmBadge=d=>badge(d);
   const unlock=data=>{window.PQM_OK=true;window.PQM_MEMBER=data||null;ov.hidden=true;document.documentElement.style.overflow="";badge(data);};
   const lock=t=>{window.PQM_OK=false;ov.hidden=false;document.documentElement.style.overflow="hidden";msg(t);};
   async function recheck(){
     const c=st.get("pqmMember");
     if(c){ const v=await verify(c); if(v.r==="ok") return unlock(v.data); if(v.r==="expired") return lock(`${v.data.n||"আপনার"} কোডের মেয়াদ ${dtxt(v.data.e)} শেষ হয়েছে। পঙ্কজবাবুর কাছ থেকে নতুন কোড নিয়ে বসান। আপনার সেভ করা প্রশ্নপত্র মোছেনি।`); }
+    if(st.get("pqmOwner")) return unlock({n:"পঙ্কজবাবু (মালিক)",e:"0"});
     if(OLD_PW_OK&&st.get("pqmKey")===OLD_PW_H) return unlock(null);
     lock("");
   }
@@ -304,11 +306,90 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
   recheck();
   $l("lockGo").onclick=async()=>{
     const c=$l("lockCode").value.trim(); if(!c){msg("আগে কোডটা পেস্ট করুন।");return;}
+    if(/^PQM-OWN-/.test(c)){ const ok=window.__pqmOwnerLogin&&await window.__pqmOwnerLogin(c); if(ok){ $l("lockCode").value=""; return unlock({n:"পঙ্কজবাবু (মালিক)",e:"0"}); } return msg("কোড মেলেনি।"); }
     if(OLD_PW_OK&&/^PQM-/.test(c)){ if(await sha(c)===OLD_PW_H){ st.set("pqmKey",OLD_PW_H); $l("lockCode").value=""; return unlock(null);} return msg("কোড মেলেনি।"); }
     const v=await verify(c);
     if(v.r==="ok"){ st.set("pqmMember",c.replace(/\s+/g,"")); $l("lockCode").value=""; unlock(v.data); }
     else msg(v.r==="expired"?"এই কোডের মেয়াদ শেষ হয়ে গেছে।":v.r==="nocrypto"?"এই ব্রাউজারে চালু করা যাচ্ছে না। Google Chrome-এ খুলুন।":"কোড মেলেনি। পুরোটা ঠিকভাবে কপি হয়েছে কিনা দেখুন।");
   };
+})();
+</script>
+<div class="lockov" id="ownerov" hidden role="dialog" aria-label="সদস্য-কোড বানান">
+  <div class="lockbox" style="max-width:480px">
+    <div class="row" style="justify-content:space-between"><b style="font-size:1.1rem">🔑 সদস্য-কোড বানান</b><button class="btn" id="ownClose" style="padding:5px 10px">✕ বন্ধ</button></div>
+    <div id="ownLogin" hidden style="display:flex;flex-direction:column;gap:8px">
+      <p style="margin:0">মালিকের পাসওয়ার্ড দিন। এই মোবাইলে একবার দিলেই মনে রাখবে।</p>
+      <input id="ownPw" type="password" autocomplete="off" placeholder="মালিকের পাসওয়ার্ড" style="font:inherit;font-size:1rem;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)">
+      <button class="btn primary" id="ownPwGo">খুলুন</button>
+    </div>
+    <div id="ownMake" hidden style="display:flex;flex-direction:column;gap:8px">
+      <label class="small" style="display:flex;flex-direction:column;gap:3px">নাম (অ্যাপে এই নামটাই দেখাবে)<input class="libin" id="ownName" autocomplete="off" placeholder="যেমন: কার্তিক সেন"></label>
+      <label class="small" style="display:flex;flex-direction:column;gap:3px">মেয়াদ<select id="ownLen"><option value="12">১ বছর</option><option value="6">৬ মাস</option><option value="3">৩ মাস</option><option value="1">১ মাস</option><option value="d">নিজে তারিখ দেব</option><option value="0">চিরকাল</option></select></label>
+      <label class="small" id="ownEndWrap" hidden style="display:flex;flex-direction:column;gap:3px">শেষ তারিখ<input class="libin" id="ownEnd" type="date"></label>
+      <button class="btn primary" id="ownGo">কোড বানান</button>
+      <textarea id="ownCode" rows="3" readonly hidden style="font:12px ui-monospace,Menlo,monospace;word-break:break-all;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)"></textarea>
+      <div class="row" id="ownShare" hidden><button class="btn" id="ownCopy">কোড কপি করুন</button><a class="btn" id="ownWa" target="_blank" rel="noopener" style="text-decoration:none">WhatsApp-এ পাঠান</a></div>
+      <div id="ownList" class="small"></div>
+      <button class="btn" id="ownForget" style="align-self:flex-start;font-size:.8rem">এই মোবাইল থেকে মালিকের অধিকার সরান</button>
+    </div>
+    <p class="small" id="ownMsg" style="margin:0;color:var(--warn)" aria-live="polite"></p>
+  </div>
+</div>
+<script>
+/* the owner's code maker: hidden from everyone else, the signing key opens only with the owner password */
+(function(){
+  const BOX={"s":"dLdsRZx54sFjo5qVKqvIfQ==","i":"n7gJULoI7ZdANtpR","c":"vunzGQ3wgRyOnt9shlak+H5cQRI2ODegHd/3iBBOgEb6r7z+zkWpJ6UYytNHcTLyVoLQTDpse70cTIw="}, PUB={"key_ops":["verify"],"ext":true,"kty":"EC","x":"VOhX1jW1LN2T-9YKILuwGfV8yYXsINs-TX60vG-IuUQ","y":"aSnxCahaHi0MVeeCpJhGBgQIhaKcbKakPQlphDCW0I0","crv":"P-256"}, $o=id=>document.getElementById(id);
+  const st={get(k){try{return localStorage.getItem(k);}catch{return null;}},set(k,v){try{localStorage.setItem(k,v);}catch{}},del(k){try{localStorage.removeItem(k);}catch{}}};
+  const unb=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+  const b64u=b=>btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+  const ymd=d=>`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`;
+  const show=e=>e==="0"?"চিরকাল":`${+e.slice(6,8)}/${+e.slice(4,6)}/${e.slice(0,4)}`;
+  const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  async function openBox(pw){
+    try{
+      const base=await crypto.subtle.importKey("raw",new TextEncoder().encode(pw),"PBKDF2",false,["deriveKey"]);
+      const key=await crypto.subtle.deriveKey({name:"PBKDF2",salt:unb(BOX.s),iterations:150000,hash:"SHA-256"},base,{name:"AES-GCM",length:256},false,["decrypt"]);
+      return new TextDecoder().decode(await crypto.subtle.decrypt({name:"AES-GCM",iv:unb(BOX.i)},key,unb(BOX.c)));
+    }catch{ return null; }
+  }
+  window.__pqmOwnerLogin=async pw=>{ const d=await openBox(pw.trim()); if(!d) return false; st.set("pqmOwner",d); showBtn(); return true; };
+  function showBtn(){
+    let b=$o("ownBtn");
+    if(!st.get("pqmOwner")){ if(b) b.remove(); return; }
+    if(!b){ b=document.createElement("button"); b.id="ownBtn"; b.className="btn"; b.style.cssText="margin-top:6px;padding:6px 12px;font-size:.88rem"; b.textContent="🔑 সদস্য-কোড বানান"; b.onclick=()=>openPanel();
+      const v=$o("memberBadge")||$o("appVer"); if(v) v.after(b); }
+  }
+  function openPanel(){ $o("ownerov").hidden=false; document.documentElement.style.overflow="hidden"; $o("ownMsg").textContent="";
+    const owner=!!st.get("pqmOwner"); $o("ownLogin").hidden=owner; $o("ownMake").hidden=!owner; list(); if(!owner) $o("ownPw").focus(); }
+  function closePanel(){ $o("ownerov").hidden=true; document.documentElement.style.overflow=""; $o("ownPw").value=""; }
+  $o("ownClose").onclick=closePanel;
+  $o("ownPwGo").onclick=async()=>{ const ok=await window.__pqmOwnerLogin($o("ownPw").value); $o("ownPw").value="";
+    if(ok){ $o("ownLogin").hidden=true; $o("ownMake").hidden=false; $o("ownMsg").textContent=""; if(window.__pqmBadge) window.__pqmBadge({n:"পঙ্কজবাবু (মালিক)",e:"0"}); showBtn(); list(); }
+    else $o("ownMsg").textContent="পাসওয়ার্ড মেলেনি।"; };
+  $o("ownLen").onchange=()=>{ $o("ownEndWrap").hidden=$o("ownLen").value!=="d"; };
+  function list(){ const L=JSON.parse(st.get("pqmMembers")||"[]");
+    $o("ownList").innerHTML=L.length?"<b>যাঁদের কোড দিয়েছেন</b><br>"+L.slice(0,50).map(x=>`${esc(x.n)} — ${esc(show(x.e))} (${esc(x.t)})`).join("<br>"):""; }
+  $o("ownGo").onclick=async()=>{
+    const n=$o("ownName").value.trim(); if(!n){ $o("ownMsg").textContent="আগে নাম লিখুন।"; return; }
+    const L=$o("ownLen").value; let e="0";
+    if(L==="d"){ if(!$o("ownEnd").value){ $o("ownMsg").textContent="শেষ তারিখ বাছুন।"; return; } e=$o("ownEnd").value.replace(/-/g,""); }
+    else if(L!=="0"){ const d=new Date(); d.setMonth(d.getMonth()+Number(L)); e=ymd(d); }
+    const payload=b64u(new TextEncoder().encode(JSON.stringify({n,e,t:ymd(new Date())})));
+    try{
+      const key=await crypto.subtle.importKey("jwk",{kty:"EC",crv:"P-256",x:PUB.x,y:PUB.y,d:st.get("pqmOwner"),ext:true},{name:"ECDSA",namedCurve:"P-256"},false,["sign"]);
+      const sig=await crypto.subtle.sign({name:"ECDSA",hash:"SHA-256"},key,new TextEncoder().encode("PQM2|"+payload));
+      const code=payload+"."+b64u(sig);
+      $o("ownCode").value=code; $o("ownCode").hidden=false; $o("ownShare").hidden=false;
+      $o("ownWa").href="https://wa.me/?text="+encodeURIComponent(`Pankaj Question Maker-এর সদস্য-কোড (${n}, ${show(e)} পর্যন্ত):\n`+code);
+      $o("ownMsg").textContent=e==="0"?`${n}-এর কোড তৈরি, মেয়াদ চিরকাল।`:`${n}-এর কোড তৈরি, ${show(e)} পর্যন্ত চলবে।`;
+      const A=JSON.parse(st.get("pqmMembers")||"[]"); A.unshift({n,e,t:new Date().toLocaleDateString("bn-IN")}); st.set("pqmMembers",JSON.stringify(A.slice(0,500))); list();
+    }catch{ $o("ownMsg").textContent="কোড বানানো গেল না।"; }
+  };
+  $o("ownCopy").onclick=async()=>{ try{ await navigator.clipboard.writeText($o("ownCode").value); $o("ownMsg").textContent="কোড কপি হয়েছে।"; }catch{ $o("ownCode").select(); } };
+  $o("ownForget").onclick=()=>{ st.del("pqmOwner"); showBtn(); closePanel(); setTimeout(()=>location.reload(),200); };
+  // hidden way in for the owner on a phone that is already open: tap the version line 5 times
+  let taps=0,tt=null; document.addEventListener("click",e=>{ if(!e.target.closest||!e.target.closest("#appVer")) return; taps++; clearTimeout(tt); tt=setTimeout(()=>taps=0,1500); if(taps>=5){ taps=0; openPanel(); } });
+  setTimeout(showBtn,0);
 })();
 </script>
 <div class="wrap">
@@ -345,7 +426,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৩ নভেম্বর রাত (কোড লুকোনো থাকে)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৩ নভেম্বর রাত ১০টা (মালিকের কোড বানানো)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
