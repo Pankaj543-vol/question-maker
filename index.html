@@ -310,7 +310,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৩ নভেম্বর (জলছাপ যুক্ত)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৩ নভেম্বর রাত (বাংলা/English বলার বোতাম)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -420,6 +420,10 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
           <label>প্রশ্নের নম্বর<select id="qStyle"><option value="en">1. 2. 3.</option><option value="bn">১। ২। ৩।</option><option value="bnd">১. ২. ৩.</option><option value="rom">(i) (ii) (iii)</option><option value="bl">(ক) (খ) (গ)</option><option value="lat">a) b) c)</option></select></label>
           <label>বিকল্পের নম্বর<select id="oStyle"><option value="lat">(a) (b) (c) (d)</option><option value="bl">(ক) (খ) (গ) (ঘ)</option><option value="rom">(i) (ii) (iii) (iv)</option></select></label>
           <label class="full">কোথা থেকে শুরু<select id="qStart"><option value="auto">আগের প্রশ্নের পর থেকে (নিজে থেকে)</option><option value="1">১ থেকে</option></select></label>
+        </div>
+        <div class="seg" role="radiogroup" aria-label="কোন ভাষায় বলবেন" style="margin-top:8px">
+          <label><input type="radio" name="mlang" value="bn-IN" checked><span>বাংলায় বলব</span></label>
+          <label><input type="radio" name="mlang" value="en-IN"><span>English-এ বলব</span></label>
         </div>
         <button class="btn wide micbtn" id="micDict" style="margin-top:6px">🎤 বলুন, লেখা হতে থাকবে</button>
         <button class="btn primary" id="dictGo" style="margin-top:8px">নম্বর দিয়ে সাজান</button>
@@ -634,7 +638,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
           <button class="btn" id="boxBtn">☐ বক্স</button>
           <span class="fmtbar" role="group" aria-label="লেখা সাজান"><button class="btn fmt" id="fmtB" title="বোল্ড (মোটা)"><b>B</b></button><button class="btn fmt" id="fmtI" title="তেরছা (ইটালিক)"><i style="font-family:serif">I</i></button><button class="btn fmt" id="fmtUp" title="অক্ষর বড়">A<sup>+</sup></button><button class="btn fmt" id="fmtDn" title="অক্ষর ছোট">A<sup>−</sup></button><button class="btn fmt" id="fmtRst" title="মাপ সাধারণ">A</button></span>
           <button class="btn micbtn" id="micDoc">🎤 বলে লিখুন</button>
-          <select id="micLang" aria-label="কোন ভাষায় বলবেন"><option value="bn-IN">বাংলা</option><option value="en-IN">English</option></select>
+          <select id="micLang" aria-label="কোন ভাষায় বলবেন" title="কোন ভাষায় বলবেন"><option value="bn-IN">🎤 বাংলা</option><option value="en-IN">🎤 English</option></select>
           <button class="btn" id="findBtn">🔍 খুঁজুন ও বদলান</button>
           <button class="btn" id="symBtn">∑ অংকের চিহ্ন</button>
           <button class="btn" id="rboxBtn">☐ লাইনের শেষে ডানদিকে বক্স</button>
@@ -22700,7 +22704,8 @@ function micStop(){
   b.addEventListener("pointerdown",e=>e.preventDefault()); b.addEventListener("mousedown",e=>e.preventDefault());
   b.onclick=()=>micStart(id==="micDict"?"dict":"doc"); });
 try{ const ml=localStorage.getItem("micLang"); if(ml) $("micLang").value=ml; }catch{}
-$("micLang").onchange=()=>{ try{localStorage.setItem("micLang",$("micLang").value);}catch{} if(mic){ const k=mic.kind; micStop(); micStart(k); } };
+$("micLang").onchange=()=>{ try{localStorage.setItem("micLang",$("micLang").value);}catch{} document.querySelectorAll("input[name=mlang]").forEach(r=>r.checked=r.value===$("micLang").value); if(mic){ const k=mic.kind; micStop(); micStart(k); } };
+document.querySelectorAll("input[name=mlang]").forEach(r=>{ r.checked=r.value===$("micLang").value; r.onchange=()=>{ $("micLang").value=r.value; $("micLang").onchange(); }; });
 if(!SR) ["micDict","micDoc"].forEach(id=>{ const b=$(id); if(b) b.title="এই ব্রাউজারে চলে না, Chrome-এ খুলুন"; });
 /* ---------- bold, italic and letter size for chosen words (or the whole line) ---------- */
 const FSZ={"-1":0.85,"0":1,"1":1.2,"2":1.4,"3":1.7};
