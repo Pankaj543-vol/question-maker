@@ -447,7 +447,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৪ নভেম্বর সকাল (যন্ত্র-ধরা কোড)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৪ নভেম্বর দুপুর (Google থেকে ছবি)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -830,6 +830,8 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
         <div class="edtools" style="margin-bottom:8px">
           <button class="btn" id="insImg">🖼 যেখানে ট্যাপ করেছেন, তার নিচে ছবি বসান</button>
           <button class="btn" id="insCam">📷 তুলে বসান</button>
+          <span class="row" style="gap:6px;flex-wrap:nowrap;flex:1;min-width:240px"><input class="libin" id="webQ" placeholder="ছবি খুঁজুন, যেমন: ত্রিভুজ চিত্র" autocomplete="off" style="flex:1;min-width:0;width:auto"><button class="btn" id="webGo">🔎 Google-এ খুঁজুন</button></span>
+          <button class="btn" id="clipPut">📋 কপি করা ছবি বসান</button>
         </div>
         <div class="stage" id="stage">
           <div class="sheet" id="sheet">
@@ -21633,6 +21635,8 @@ $("file").onchange=e=>{addFiles(e.target.files);e.target.value="";};
 $("drop").addEventListener("drop",e=>addFiles(e.dataTransfer.files));
 document.addEventListener("paste",e=>{
   const files=[...(e.clipboardData?.files||[])].filter(f=>f.type.startsWith("image/"));
+  // a picture pasted while writing the paper (or just after a web search) goes straight in, where the cursor is
+  if(files.length&&((e.target.closest&&e.target.closest("#doc"))||Date.now()-(window.__webT||0)<15*60*1000)&&!(e.target.closest&&e.target.closest("#pastebox,#drop"))){ e.preventDefault(); window.__webT=0; insertFile(files[0]); return; }
   if(files.length){e.preventDefault();addFiles(files);setStatus(`${bn(files.length)}টা ছবি যোগ হল।`);return;}
   if(e.target.closest && e.target.closest("#doc")){e.preventDefault();document.execCommand("insertText",false,e.clipboardData.getData("text/plain"));}
 });
@@ -22124,6 +22128,20 @@ async function insertPicture(camera){
   return insertFile(f);
 }
 $("insImg").onclick=()=>insertPicture(false);
+/* search pictures on Google in Chrome, copy one, come back and paste (Ctrl+V) or press "কপি করা ছবি বসান" */
+$("webGo").onclick=()=>{ const q=$("webQ").value.trim(); window.__webT=Date.now();
+  window.open(q?"https://www.google.com/search?tbm=isch&q="+encodeURIComponent(q):"https://images.google.com/","_blank","noopener");
+  setStatus("Google-এ ছবি খুলছে। পছন্দের ছবিতে ল্যাপটপে ডান-ক্লিক করে \"Copy image\", মোবাইলে আঙুল চেপে রেখে \"Copy image\"। তারপর এখানে ফিরে Ctrl+V চাপুন, অথবা \"📋 কপি করা ছবি বসান\"।"); };
+$("webQ").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); $("webGo").click(); } });
+$("clipPut").addEventListener("pointerdown",e=>e.preventDefault());
+$("clipPut").onclick=async()=>{
+  if(!navigator.clipboard||!navigator.clipboard.read){ setStatus("এই ব্রাউজারে কপি করা ছবি পড়া যাচ্ছে না। লেখায় ক্লিক করে Ctrl+V চাপুন।",true); return; }
+  try{
+    const items=await navigator.clipboard.read();
+    for(const it of items){ const t=it.types.find(x=>x.startsWith("image/")); if(t){ const blob=await it.getType(t); return insertFile(new File([blob],"web."+(t.split("/")[1]||"png"),{type:t})); } }
+    setStatus("কপি করা কোনো ছবি পাওয়া গেল না। আগে ছবিতে \"Copy image\" করুন।",true);
+  }catch(err){ setStatus("কপি করা ছবি পড়ার অনুমতি দিন (Allow), তারপর আবার চাপুন। না হলে লেখায় ক্লিক করে Ctrl+V চাপুন।",true); }
+};
 $("insCam").onclick=()=>insertPicture(true);
 
 /* ---------- undo (one step) ---------- */
