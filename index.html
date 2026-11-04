@@ -260,6 +260,9 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
   <div class="lockbox">
     <b style="font-size:1.15rem">Pankaj Question Maker</b>
     <p style="margin:0" id="lockLead">এই অ্যাপ চালাতে পঙ্কজবাবুর দেওয়া <b>সদস্য-কোড</b> লাগবে। একবার বসালে মেয়াদ পর্যন্ত আর চাইবে না।</p>
+    <div class="lockdev"><span class="small">আপনার যন্ত্রের নম্বর</span><b id="lockDev">…</b></div>
+    <div class="row"><button class="btn" id="lockDevCopy">নম্বর কপি করুন</button><a class="btn" id="lockDevWa" target="_blank" rel="noopener" style="text-decoration:none">WhatsApp-এ পঙ্কজবাবুকে পাঠান</a></div>
+    <p class="small" style="margin:0">কোড চাইতে এই নম্বরটা পঙ্কজবাবুকে পাঠান। তারপর পাওয়া কোড নিচে পেস্ট করুন।</p>
     <input id="lockCode" type="password" placeholder="সদস্য-কোড এখানে পেস্ট করুন" spellcheck="false" autocomplete="off" autocapitalize="off" style="font:inherit;font-size:1rem;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)">
     <button class="btn primary" id="lockGo">চালু করুন</button>
     <p class="small" id="lockMsg" style="margin:0;color:var(--warn)" aria-live="polite"></p>
@@ -269,7 +272,13 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 /* member codes: each code carries a name and an end date, signed with Pankaj's key, so nobody can make or stretch one */
 (function(){
   const PUB={"key_ops":["verify"],"ext":true,"kty":"EC","x":"VOhX1jW1LN2T-9YKILuwGfV8yYXsINs-TX60vG-IuUQ","y":"aSnxCahaHi0MVeeCpJhGBgQIhaKcbKakPQlphDCW0I0","crv":"P-256"}, OLD_PW_OK=true, OLD_PW_H="7f8a86e820e0363ff2c298f97871b75d727ecf70b28e406a27fb448f070a3e57";
+  const DEV_AL="ABCDEFGHJKMNPQRSTUVWXYZ23456789";
   const $l=id=>document.getElementById(id), st={get(k){try{return localStorage.getItem(k);}catch{return null;}},set(k,v){try{localStorage.setItem(k,v);}catch{}}};
+  let dev=st.get("pqmDev");
+  if(!dev||!/^[A-Z2-9]{3}-[A-Z2-9]{3}-[A-Z2-9]{3}$/.test(dev)){ const r=crypto.getRandomValues(new Uint8Array(9)); dev=[...r].map(x=>DEV_AL[x%DEV_AL.length]).join("").replace(/(...)(...)(...)/,"$1-$2-$3"); st.set("pqmDev",dev); }
+  window.PQM_DEV=dev; $l("lockDev").textContent=dev;
+  $l("lockDevWa").href="https://wa.me/?text="+encodeURIComponent("Pankaj Question Maker-এর কোডের জন্য আমার যন্ত্রের নম্বর: "+dev);
+  $l("lockDevCopy").onclick=async()=>{ try{ await navigator.clipboard.writeText(dev); $l("lockMsg").textContent="নম্বর কপি হয়েছে।"; }catch{ $l("lockMsg").textContent="নম্বরটা লিখে পাঠান: "+dev; } };
   window.PQM_OK=false; window.PQM_MEMBER=null;
   const ov=$l("lockov"), msg=t=>{$l("lockMsg").textContent=t||"";};
   const b64u=s=>{s=s.replace(/-/g,"+").replace(/_/g,"/");while(s.length%4)s+="=";const b=atob(s);return Uint8Array.from(b,c=>c.charCodeAt(0));};
@@ -285,6 +294,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
       const ok=await crypto.subtle.verify({name:"ECDSA",hash:"SHA-256"},key,b64u(m[2]),new TextEncoder().encode("PQM2|"+m[1]));
       if(!ok) return {r:"bad"};
     }catch{ return {r:"nocrypto"}; }
+    if(data.d&&data.d!==window.PQM_DEV) return {r:"otherdev",data}; // made for one device only
     if(data.e&&data.e!=="0"&&today()>Number(data.e)) return {r:"expired",data};
     return {r:"ok",data};
   }
@@ -317,7 +327,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
     if(OLD_PW_OK&&/^PQM-/.test(c)){ if(await sha(c)===OLD_PW_H){ st.set("pqmKey",OLD_PW_H); $l("lockCode").value=""; return unlock(null);} return msg("কোড মেলেনি।"); }
     const v=await verify(c);
     if(v.r==="ok"){ st.set("pqmMember",c.replace(/\s+/g,"")); $l("lockCode").value=""; unlock(v.data); }
-    else msg(v.r==="expired"?"এই কোডের মেয়াদ শেষ হয়ে গেছে।":v.r==="nocrypto"?"এই ব্রাউজারে চালু করা যাচ্ছে না। Google Chrome-এ খুলুন।":"কোড মেলেনি। পুরোটা ঠিকভাবে কপি হয়েছে কিনা দেখুন।");
+    else msg(v.r==="otherdev"?`এই কোড অন্য যন্ত্রের জন্য বানানো (${v.data.d})। এই যন্ত্রের নম্বর ${window.PQM_DEV} পঙ্কজবাবুকে পাঠিয়ে নতুন কোড নিন।`:v.r==="expired"?"এই কোডের মেয়াদ শেষ হয়ে গেছে।":v.r==="nocrypto"?"এই ব্রাউজারে চালু করা যাচ্ছে না। Google Chrome-এ খুলুন।":"কোড মেলেনি। পুরোটা ঠিকভাবে কপি হয়েছে কিনা দেখুন।");
   };
 })();
 </script>
@@ -333,6 +343,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
       <label class="small" style="display:flex;flex-direction:column;gap:3px">নাম (অ্যাপে এই নামটাই দেখাবে)<input class="libin" id="ownName" autocomplete="off" placeholder="যেমন: কার্তিক সেন"></label>
       <label class="small" style="display:flex;flex-direction:column;gap:3px">মেয়াদ<select id="ownLen"><option value="12">১ বছর</option><option value="6">৬ মাস</option><option value="3">৩ মাস</option><option value="1">১ মাস</option><option value="d">নিজে তারিখ দেব</option><option value="0">চিরকাল</option></select></label>
       <label class="small" id="ownEndWrap" hidden style="display:flex;flex-direction:column;gap:3px">শেষ তারিখ<input class="libin" id="ownEnd" type="date"></label>
+      <label class="small" style="display:flex;flex-direction:column;gap:3px">যন্ত্রের নম্বর (ঐচ্ছিক — দিলে কোড শুধু সেই যন্ত্রে চলবে)<input class="libin" id="ownDev" autocomplete="off" placeholder="যেমন: K7P-3QX-9MA" style="text-transform:uppercase;font-family:ui-monospace,Menlo,monospace"></label>
       <button class="btn primary" id="ownGo">কোড বানান</button>
       <textarea id="ownCode" rows="3" readonly hidden style="font:12px ui-monospace,Menlo,monospace;word-break:break-all;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)"></textarea>
       <div class="row" id="ownShare" hidden><button class="btn" id="ownCopy">কোড কপি করুন</button><a class="btn" id="ownWa" target="_blank" rel="noopener" style="text-decoration:none">WhatsApp-এ পাঠান</a></div>
@@ -375,13 +386,15 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
     else $o("ownMsg").textContent="পাসওয়ার্ড মেলেনি।"; };
   $o("ownLen").onchange=()=>{ $o("ownEndWrap").hidden=$o("ownLen").value!=="d"; };
   function list(){ const L=JSON.parse(st.get("pqmMembers")||"[]");
-    $o("ownList").innerHTML=L.length?"<b>যাঁদের কোড দিয়েছেন</b><br>"+L.slice(0,50).map(x=>`${esc(x.n)} — ${esc(show(x.e))} (${esc(x.t)})`).join("<br>"):""; }
+    $o("ownList").innerHTML=L.length?"<b>যাঁদের কোড দিয়েছেন</b><br>"+L.slice(0,50).map(x=>`${esc(x.n)}${x.d?" — যন্ত্র "+esc(x.d):""} — ${esc(show(x.e))} (${esc(x.t)})`).join("<br>"):""; }
   $o("ownGo").onclick=async()=>{
     const n=$o("ownName").value.trim(); if(!n){ $o("ownMsg").textContent="আগে নাম লিখুন।"; return; }
     const L=$o("ownLen").value; let e="0";
     if(L==="d"){ if(!$o("ownEnd").value){ $o("ownMsg").textContent="শেষ তারিখ বাছুন।"; return; } e=$o("ownEnd").value.replace(/-/g,""); }
     else if(L!=="0"){ const d=new Date(); d.setMonth(d.getMonth()+Number(L)); e=ymd(d); }
-    const payload=b64u(new TextEncoder().encode(JSON.stringify({n,e,t:ymd(new Date())})));
+    let dv=$o("ownDev").value.toUpperCase().replace(/[^A-Z0-9]/g,"");
+    if(dv){ if(dv.length!==9||/[01ILO]/.test(dv)){ $o("ownMsg").textContent="যন্ত্রের নম্বর ঠিক নয়। ৯টা অক্ষর/সংখ্যা হয়, যেমন K7P-3QX-9MA (এতে 0, 1, I, L, O থাকে না)।"; return; } dv=dv.replace(/(...)(...)(...)/,"$1-$2-$3"); }
+    const payload=b64u(new TextEncoder().encode(JSON.stringify(dv?{n,e,t:ymd(new Date()),d:dv}:{n,e,t:ymd(new Date())})));
     try{
       const key=await crypto.subtle.importKey("jwk",{kty:"EC",crv:"P-256",x:PUB.x,y:PUB.y,d:st.get("pqmOwner"),ext:true},{name:"ECDSA",namedCurve:"P-256"},false,["sign"]);
       const sig=await crypto.subtle.sign({name:"ECDSA",hash:"SHA-256"},key,new TextEncoder().encode("PQM2|"+payload));
@@ -389,7 +402,8 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
       $o("ownCode").value=code; $o("ownCode").hidden=false; $o("ownShare").hidden=false;
       $o("ownWa").href="https://wa.me/?text="+encodeURIComponent(`Pankaj Question Maker-এর সদস্য-কোড (${n}, ${show(e)} পর্যন্ত):\n`+code);
       $o("ownMsg").textContent=e==="0"?`${n}-এর কোড তৈরি, মেয়াদ চিরকাল।`:`${n}-এর কোড তৈরি, ${show(e)} পর্যন্ত চলবে।`;
-      const A=JSON.parse(st.get("pqmMembers")||"[]"); A.unshift({n,e,t:new Date().toLocaleDateString("bn-IN")}); st.set("pqmMembers",JSON.stringify(A.slice(0,500))); list();
+      if(dv) $o("ownMsg").textContent+=` শুধু ${dv} যন্ত্রে চলবে।`; $o("ownDev").value="";
+      const A=JSON.parse(st.get("pqmMembers")||"[]"); A.unshift({n,e,d:dv||"",t:new Date().toLocaleDateString("bn-IN")}); st.set("pqmMembers",JSON.stringify(A.slice(0,500))); list();
     }catch{ $o("ownMsg").textContent="কোড বানানো গেল না।"; }
   };
   $o("ownCopy").onclick=async()=>{ try{ await navigator.clipboard.writeText($o("ownCode").value); $o("ownMsg").textContent="কোড কপি হয়েছে।"; }catch{ $o("ownCode").select(); } };
@@ -433,7 +447,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৪ নভেম্বর সকাল (যুক্তাক্ষর বানানোর ঘর)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৪ নভেম্বর সকাল (যন্ত্র-ধরা কোড)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
