@@ -447,7 +447,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৪ নভেম্বর দুপুর (Share দিয়ে ছবি/PDF)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৪ নভেম্বর দুপুর ২ (Gemini-র ছবির কোড ঠিক হয়)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -22323,12 +22323,23 @@ $("cmdNo").onclick=()=>{cmdPlanFn=null;$("cmdPlan").hidden=true;};
 /* ---------- redraw a hand drawing with Claude (optional) ---------- */
 function cleanSVG(t){
   const m=t.match(/<svg[\s\S]*<\/svg>/i); if(!m) return null;
-  let s=m[0].replace(/<script[\s\S]*?<\/script>/gi,"").replace(/<foreignObject[\s\S]*?<\/foreignObject>/gi,"")
+  // Gemini/markdown copy turns addresses into links: [http://x](http://x) → http://x
+  let s=m[0].replace(/\[\s*(https?:\/\/[^\]\s]*)\s*\]\(\s*\1\s*\)/gi,"$1").replace(/\[(https?:\/\/[^\]\s]*)\]\([^)]*\)/gi,"$1")
+    .replace(/<(https?:\/\/[^>\s]*)>/gi,"$1").replace(/[\u201C\u201D]/g,'"').replace(/[\u2018\u2019]/g,"'");
+  s=s.replace(/\sxmlns\s*=\s*("[^"]*"|'[^']*')/i,"").replace(/<svg/i,'<svg xmlns="http://www.w3.org/2000/svg"');
+  if(/xlink:/.test(s)) s=s.replace(/\sxmlns:xlink\s*=\s*("[^"]*"|'[^']*')/i,"").replace(/<svg/i,'<svg xmlns:xlink="http://www.w3.org/1999/xlink"');
+  s=s.replace(/<script[\s\S]*?<\/script>/gi,"").replace(/<foreignObject[\s\S]*?<\/foreignObject>/gi,"")
     .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*')/gi,"").replace(/(href)\s*=\s*("|')\s*(?:https?:|javascript:)[^"']*\2/gi,"");
-  if(!/xmlns=/.test(s)) s=s.replace(/<svg/i,'<svg xmlns="http://www.w3.org/2000/svg"');
   return s;
 }
 function svgToPNG(svg){
+  return svgToPNG1(svg).catch(()=>{ // broken markup (stray &, unclosed tags): let the HTML parser mend it, then try again
+    const d=new DOMParser().parseFromString("<!doctype html><body>"+svg,"text/html"), el=d.querySelector("svg"); if(!el) throw 0;
+    el.setAttribute("xmlns","http://www.w3.org/2000/svg");
+    if(!el.getAttribute("width")&&!el.getAttribute("viewBox")){ el.setAttribute("width","800"); el.setAttribute("height","600"); }
+    return svgToPNG1(new XMLSerializer().serializeToString(el)); });
+}
+function svgToPNG1(svg){
   return new Promise((ok,no)=>{const im=new Image();const u=URL.createObjectURL(new Blob([svg],{type:"image/svg+xml"}));
     im.onload=()=>{const w=im.naturalWidth||800,h=im.naturalHeight||600,k=1200/w;const c=document.createElement("canvas");c.width=1200;c.height=Math.round(h*k);
       const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);ok(c.toDataURL("image/png"));};
