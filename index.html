@@ -447,7 +447,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৪ নভেম্বর দুপুর (Google থেকে ছবি)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৪ নভেম্বর দুপুর (Share দিয়ে ছবি/PDF)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -22128,6 +22128,37 @@ async function insertPicture(camera){
   return insertFile(f);
 }
 $("insImg").onclick=()=>insertPicture(false);
+/* things shared to the app from the phone's Share menu (pictures, PDFs) arrive in the "ছবি দিন" box */
+async function pdfToImages(file){
+  if(!window.pdfjsLib){ await new Promise((ok,no)=>{ const sc=document.createElement("script"); sc.src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"; sc.onload=ok; sc.onerror=no; document.head.appendChild(sc); });
+    pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"; }
+  const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise, out=[];
+  for(let i=1;i<=Math.min(pdf.numPages,30);i++){
+    const page=await pdf.getPage(i), vp=page.getViewport({scale:2}), cv=document.createElement("canvas"); cv.width=vp.width; cv.height=vp.height;
+    await page.render({canvasContext:cv.getContext("2d"),viewport:vp}).promise;
+    const blob=await new Promise(r=>cv.toBlob(r,"image/jpeg",0.92)); out.push(new File([blob],`${(file.name||"pdf").replace(/\.pdf$/i,"")}-পাতা-${i}.jpg`,{type:"image/jpeg"}));
+  }
+  return out;
+}
+async function takeShared(){
+  const q=new URLSearchParams(location.search); if(!q.has("shared")) return;
+  history.replaceState(null,"",location.pathname);
+  if(!("caches" in window)) return;
+  try{
+    const c=await caches.open("pqm-share"), keys=await c.keys(); if(!keys.length){ setStatus("শেয়ার করা জিনিস পাওয়া গেল না। আবার শেয়ার করে দেখুন।",true); return; }
+    const imgs=[]; let pdfs=0, pages=0, bad=0;
+    for(const k of keys){ const res=await c.match(k); const blob=await res.blob(); const name=decodeURIComponent(res.headers.get("x-name")||"file"); await c.delete(k);
+      const f=new File([blob],name,{type:blob.type});
+      if(f.type.startsWith("image/")) imgs.push(f);
+      else if(f.type==="application/pdf"||/\.pdf$/i.test(name)){ pdfs++; setStatus("PDF-এর পাতাগুলো ছবি বানানো হচ্ছে…"); try{ const p=await pdfToImages(f); pages+=p.length; imgs.push(...p); }catch{ bad++; } }
+      else bad++;
+    }
+    if(imgs.length) addFiles(imgs);
+    setStatus(imgs.length?`শেয়ার করা ${bn(imgs.length)}টা ছবি${pdfs?` (PDF-এর ${bn(pages)}টা পাতা সহ)`:""} "ছবি দিন" অংশে এসেছে। প্রশ্নে বসাতে ছোট ছবির নিচে "＋ প্রশ্নে বসান" চাপুন।`+(bad?` (${bn(bad)}টা খোলা যায়নি${pdfs?", PDF-এর জন্য ইন্টারনেট লাগে":""})`:""):"শেয়ার করা জিনিস খোলা গেল না।",!imgs.length);
+    const d=$("drop"); if(d) d.scrollIntoView({block:"center"});
+  }catch{ setStatus("শেয়ার করা জিনিস খোলা গেল না।",true); }
+}
+setTimeout(takeShared,600);
 /* search pictures on Google in Chrome, copy one, come back and paste (Ctrl+V) or press "কপি করা ছবি বসান" */
 $("webGo").onclick=()=>{ const q=$("webQ").value.trim(); window.__webT=Date.now();
   window.open(q?"https://www.google.com/search?tbm=isch&q="+encodeURIComponent(q):"https://images.google.com/","_blank","noopener");
