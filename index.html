@@ -246,6 +246,13 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 .wm{position:absolute;left:50%;top:50%;pointer-events:none;z-index:0;display:flex;flex-direction:column;align-items:center;gap:.2em;color:#000;font-weight:700;white-space:nowrap;line-height:1.1;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .wm img{display:block;filter:grayscale(1)}
 .ppage .doc{position:relative;z-index:1}
+.jmk{border:2px solid var(--accent);border-radius:10px;padding:10px;margin:10px 0 6px;display:flex;flex-direction:column;gap:6px;background:var(--bg)}
+.jslots{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.jslots .js{min-width:46px;height:46px;border:1.5px dashed var(--line);border-radius:8px;display:inline-grid;place-items:center;font:600 1.5rem "Noto Serif Bengali",serif;background:var(--panel)}
+.jslots i{font-style:normal;color:var(--muted)}
+.jout{min-height:64px;display:grid;place-items:center;border-radius:8px;background:var(--panel);border:1px solid var(--line);padding:6px;text-align:center}
+.jout .jbig{font:700 2.6rem/1.2 "Noto Serif Bengali",serif;color:var(--fg)}
+.jout .jhint{color:var(--muted);opacity:.55;font-size:.95rem}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head><body>
@@ -426,7 +433,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৩ নভেম্বর রাত (বাংলা অক্ষরের বোর্ড)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৪ নভেম্বর সকাল (যুক্তাক্ষর বানানোর ঘর)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -23022,12 +23029,33 @@ function bnPut(txt){
 }
 (function buildBn(){
   const b=$("bnboard"); let h="";
-  BNS.forEach(([name,items])=>{ h+=`<h4>${name}</h4><div class="sg">`+items.map(it=>{const [v,l]=Array.isArray(it)?it:[it,it==="‌"?"ZWNJ":it]; return `<button type="button" data-v="${esc(v)}" title="${esc(l)}">${esc(l==="ZWNJ"?"যুক্ত ভাঙুন":(v.startsWith("্")||v==="র্")?l:v.length<=2&&/[\u09BE-\u09CC\u09D7\u0981-\u0983\u09CD]/.test(v)?"◌"+v:l)}</button>`;}).join("")+"</div>"; });
+  const CONS="ক খ গ ঘ ঙ চ ছ জ ঝ ঞ ট ঠ ড ঢ ণ ত থ দ ধ ন প ফ ব ভ ম য র ল শ ষ স হ ড় য়".split(" "), KARS="া ি ী ু ূ ৃ ে ৈ ো ৌ".split(" ");
+  const MAKER=`<div class="jmk" id="jmk"><b>যুক্তাক্ষর বানানোর ঘর</b>
+    <div class="jslots"><span id="js0" class="js"></span><i>+</i><span id="js1" class="js"></span><i>+</i><span id="js2" class="js"></span><i>+</i><span id="js3" class="js kar"></span></div>
+    <div class="jout" id="jout"><span class="jhint">যেমন: ক + ষ = ক্ষ · স + ত + র = স্ত্র · ন + ত + ু = ন্তু · র + ক = র্ক · জ + ঞ = জ্ঞ</span></div>
+    <p class="small" style="margin:0">পরপর অক্ষর চাপুন (২টা বা ৩টা), চাইলে শেষে কার। তারপর "বসান"।</p>
+    <div class="sg">${CONS.map(c=>`<button type="button" data-j="${c}">${c}</button>`).join("")}</div>
+    <div class="sg" style="margin-top:4px">${KARS.map(k=>`<button type="button" data-jk="${k}">◌${k}</button>`).join("")}</div>
+    <div class="row" style="margin-top:6px"><button class="btn primary" id="jPut" style="width:auto">বসান</button><button class="btn" id="jBack">⌫ একটা মুছুন</button><button class="btn" id="jClear">মুছে নতুন করে</button></div></div>`;
+  BNS.forEach(([name,items])=>{ if(name==="যুক্তাক্ষর") h+=MAKER; h+=`<h4>${name}</h4><div class="sg">`+items.map(it=>{const [v,l]=Array.isArray(it)?it:[it,it==="‌"?"ZWNJ":it]; return `<button type="button" data-v="${esc(v)}" title="${esc(l)}">${esc(l==="ZWNJ"?"যুক্ত ভাঙুন":(v.startsWith("্")||v==="র্")?l:v.length<=2&&/[\u09BE-\u09CC\u09D7\u0981-\u0983\u09CD]/.test(v)?"◌"+v:l)}</button>`;}).join("")+"</div>"; });
   b.insertAdjacentHTML("beforeend",h);
   b.addEventListener("pointerdown",e=>{ if(e.target.closest("button[data-v]")) e.preventDefault(); });
   b.addEventListener("mousedown",e=>{ if(e.target.closest("button[data-v]")) e.preventDefault(); });
   b.addEventListener("click",e=>{ const x=e.target.closest("button[data-v]"); if(x) bnPut(x.dataset.v); });
   $("bnClose").onclick=()=>{ b.hidden=true; };
+  // the conjunct maker: letters joined with হসন্ত, an optional কার at the end
+  const J={c:[],k:""};
+  const jword=()=>J.c.length?J.c.join("\u09CD")+J.k:"";
+  const jshow=()=>{ for(let i=0;i<3;i++) $("js"+i).textContent=J.c[i]||""; $("js3").textContent=J.k?"◌"+J.k:"";
+    const w=jword(); $("jout").innerHTML=w?`<span class="jbig">${esc(w)}</span>`:'<span class="jhint">যেমন: ক + ষ = ক্ষ · স + ত + র = স্ত্র · ন + ত + ু = ন্তু · র + ক = র্ক · জ + ঞ = জ্ঞ</span>'; };
+  b.addEventListener("click",e=>{ const x=e.target.closest("button[data-j],button[data-jk]"); if(!x) return;
+    if(x.dataset.j){ if(J.c.length>=3){ setStatus("যুক্তাক্ষরে সর্বোচ্চ ৩টে অক্ষর। আগে \"বসান\" বা \"মুছে নতুন করে\" চাপুন।",true); return; } if(J.k) J.k=""; J.c.push(x.dataset.j); }
+    else { if(!J.c.length){ setStatus("আগে অক্ষর বাছুন, তারপর কার।",true); return; } J.k=x.dataset.jk; }
+    jshow(); });
+  $("jBack").onclick=()=>{ if(J.k) J.k=""; else J.c.pop(); jshow(); };
+  $("jClear").onclick=()=>{ J.c=[]; J.k=""; jshow(); };
+  ["jPut","jBack","jClear"].forEach(id=>{ $(id).addEventListener("pointerdown",e=>e.preventDefault()); $(id).addEventListener("mousedown",e=>e.preventDefault()); });
+  $("jPut").onclick=()=>{ const w=jword(); if(!w){ setStatus("আগে অক্ষর বাছুন।",true); return; } bnPut(w); setStatus(`"${w}" বসানো হল।`); J.c=[]; J.k=""; jshow(); };
 })();
 $("bnBtn").onclick=()=>{ const b=$("bnboard"); if(!b.hidden){ b.hidden=true; return; } $("symboard").hidden=true; b.hidden=false; };
 const avro=s=>{ try{ return window.OmicronLab?OmicronLab.Avro.Phonetic.parse(s):s; }catch{ return s; } };
