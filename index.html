@@ -454,7 +454,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৪ নভেম্বর বিকেল (পৃষ্ঠা নম্বর ১/৪)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৬ নভেম্বর সকাল (Gemini দ্রুত টাইপ)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -21910,10 +21910,11 @@ async function run(){
     const im=todo[k], idx=images.indexOf(im)+1;
     const live=document.createElement("div"); live.className="live"; live.textContent="পড়ছে…";
     $("doc").appendChild(live);
-    setStatus(`ছবি ${bn(idx)} পড়া হচ্ছে (${bn(k+1)}/${bn(todo.length)})। এক পাতায় আধ মিনিট থেকে দু-মিনিট লাগতে পারে।`);
+    setStatus(`ছবি ${bn(idx)} পড়া হচ্ছে (${bn(k+1)}/${bn(todo.length)})। লেখা আসতে শুরু করলেই পাতায় দেখতে পাবেন।`);
     ctl=new AbortController();
     try{
-      const {text,truncated}=await apiRead(im.file,{signal:ctl.signal,careful:$("careful").checked});
+      const {text,truncated}=await apiRead(im.file,{signal:ctl.signal,careful:$("careful").checked,
+        onText:t=>{ live.textContent=t||"পড়ছে…"; if(t) setStatus(`ছবি ${bn(idx)} টাইপ হচ্ছে… (${bn(t.length)} অক্ষর এসেছে)`); }});
       { const tmp=live.parentNode; live.remove(); snapshot(); if(tmp) tmp.appendChild(live); }
       insertHTML(live,textToHTML(autoStructure(text),null,im.id)); polish();
       im.done=true; renderThumbs();
@@ -23845,7 +23846,9 @@ const GEMMSG={
   g_quota:"Google-এর ফ্রি সীমা এখন শেষ, অথবা এই অ্যাকাউন্টে ফ্রি সীমা দেওয়া হয়নি। কিছুক্ষণ পরে বা কাল আবার চেষ্টা করুন। ততক্ষণ Gemini অ্যাপে টাইপ করিয়ে পেস্ট-ঘরে দিন।",
   g_denied:"Google এই key দিয়ে ব্যবহার করতে দিচ্ছে না। AI Studio-তে নতুন key বানিয়ে দেখুন, নয়তো Gemini অ্যাপ থেকে পেস্ট করুন।",
   g_blocked:"Gemini এই ছবিটা পড়ল না। অন্য ছবি দিন, নয়তো Gemini অ্যাপ থেকে পেস্ট করুন।",
-  g_http:"Gemini থেকে উত্তর এল না। একটু পরে আবার চাপুন, নয়তো Gemini অ্যাপ থেকে পেস্ট করুন।"
+  g_http:"Gemini থেকে উত্তর এল না। একটু পরে আবার চাপুন, নয়তো Gemini অ্যাপ থেকে পেস্ট করুন।",
+  g_slow:"Gemini ২ মিনিট অপেক্ষা করেও কিছু পাঠাল না, তাই থামানো হল (হালকা মডেলেও একবার চেষ্টা করা হয়েছে)। একটু পরে আবার \"টাইপ করুন\" চাপুন, নয়তো Gemini অ্যাপে টাইপ করিয়ে পেস্ট-ঘরে দিন।",
+  g_404:"Gemini-র মডেল খুঁজে পাওয়া গেল না। একটু পরে আবার চাপুন।"
 };
 const GEMBASE="https://generativelanguage.googleapis.com/v1beta/";
 async function gemErr(r){
@@ -23865,22 +23868,73 @@ async function gemModel(key,signal,fresh){
   const pick=ok.filter(m=>/flash/.test(m.name)&&!/lite|image|tts|live|audio|embed|exp|8b/.test(m.name)).sort((a,b)=>(/preview/.test(a.name)-/preview/.test(b.name))||ver(b.name)-ver(a.name));
   const name=(pick[0]&&pick[0].name)||"models/gemini-2.5-flash"; store.set("gemModel",name); return name;
 }
-async function apiRead(file,{signal}){
+async function gemLite(key,signal){ // the lighter, quicker Flash model, used once if the main one is too slow
+  const c=store.get("gemLite"); if(c) return c;
+  let name="models/gemini-2.5-flash-lite";
+  try{ const r=await fetch(GEMBASE+"models?pageSize=200",{signal,headers:{"x-goog-api-key":key}});
+    if(r.ok){ const j=await r.json(); const ver=n=>{const x=String(n).match(/gemini-(\d+(?:\.\d+)?)/);return x?Number(x[1]):0;};
+      const L=(j.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes("generateContent")&&/flash-lite/.test(m.name)&&!/image|tts|live|audio|embed|exp/.test(m.name))
+        .sort((a,b)=>(/preview/.test(a.name)-/preview/.test(b.name))||ver(b.name)-ver(a.name));
+      if(L[0]) name=L[0].name; } }catch{}
+  store.set("gemLite",name); return name;
+}
+function gemThink(model){ // ways to tell this model to think less before typing, tried in this order
+  const v=(String(model).match(/gemini-(\d+(?:\.\d+)?)/)||[])[1]; const n=v?Number(v):0;
+  if(n>=3) return [{thinkingLevel:"minimal"},{thinkingLevel:"low"},null];
+  if(n>=2.5) return [{thinkingBudget:0},null];
+  return [null];
+}
+const GEM_WAIT=120000; // stop if nothing new arrives for 2 minutes
+async function gemStream(key,model,b64,signal,onText){
+  const tries=gemThink(model); let lastErr=null;
+  for(let t=0;t<tries.length;t++){
+    const gc={temperature:0,maxOutputTokens:16000}; if(tries[t]) gc.thinkingConfig=tries[t];
+    const body=JSON.stringify({contents:[{role:"user",parts:[{inline_data:{mime_type:"image/jpeg",data:b64}},{text:PROMPT}]}],generationConfig:gc});
+    const inner=new AbortController(); let slow=false, timer=null;
+    const kick=()=>{ clearTimeout(timer); timer=setTimeout(()=>{ slow=true; inner.abort(); },GEM_WAIT); };
+    const onUser=()=>inner.abort(); if(signal){ if(signal.aborted) throw {code:"cancelled"}; signal.addEventListener("abort",onUser,{once:true}); }
+    let text="", finish="", blocked=false;
+    try{
+      kick();
+      let r; try{ r=await fetch(GEMBASE+model+":streamGenerateContent?alt=sse",{method:"POST",signal:inner.signal,headers:{"content-type":"application/json","x-goog-api-key":key},body}); }
+      catch(e){ if(slow) throw {code:"g_slow",text}; throw {code:signal&&signal.aborted?"cancelled":"offline"}; }
+      if(r.status===400&&tries[t]&&t<tries.length-1){ // this model does not take that "think less" setting: try the next way
+        lastErr=await gemErr(r); continue; }
+      if(r.status===404) throw {code:"g_404"};
+      if(!r.ok) throw await gemErr(r);
+      const rd=r.body.getReader(), dec=new TextDecoder(); let buf="";
+      for(;;){
+        let part; try{ part=await rd.read(); }catch(e){ if(slow) throw {code:"g_slow",text}; if(signal&&signal.aborted) throw {code:"cancelled",text}; throw {code:"offline",text}; }
+        if(part.done) break; kick();
+        buf+=dec.decode(part.value,{stream:true}); let i;
+        while((i=buf.indexOf("\n"))>=0){ const line=buf.slice(0,i).trim(); buf=buf.slice(i+1);
+          if(!line.startsWith("data:")) continue; let j; try{ j=JSON.parse(line.slice(5)); }catch{ continue; }
+          if(j.promptFeedback&&j.promptFeedback.blockReason) blocked=true;
+          const c=j.candidates&&j.candidates[0]; if(!c) continue; if(c.finishReason) finish=c.finishReason;
+          const add=((c.content&&c.content.parts)||[]).filter(p=>!p.thought).map(p=>p.text||"").join("");
+          if(add){ text+=add; try{ onText&&onText(text); }catch{} } }
+      }
+    } finally { clearTimeout(timer); if(signal) signal.removeEventListener("abort",onUser); }
+    if(!text.trim()) throw {code:blocked?"g_blocked":"g_blocked"};
+    return {text,truncated:finish==="MAX_TOKENS"};
+  }
+  throw lastErr||{code:"g_http"};
+}
+async function apiRead(file,{signal,onText}){
   const key=(store.get("gemKey")||"").trim(); if(!key) throw {code:"g_no_key"};
   const b64=await shrink(file);
-  const body=JSON.stringify({contents:[{role:"user",parts:[{inline_data:{mime_type:"image/jpeg",data:b64}},{text:PROMPT}]}],generationConfig:{temperature:0,maxOutputTokens:16000}});
-  for(let attempt=0;attempt<2;attempt++){
-    const model=await gemModel(key,signal,attempt>0);
-    let r; try{ r=await fetch(GEMBASE+model+":generateContent",{method:"POST",signal,headers:{"content-type":"application/json","x-goog-api-key":key},body}); }
-    catch(e){ throw {code:e&&e.name==="AbortError"?"cancelled":"offline"}; }
-    if(r.status===404&&attempt===0){ store.set("gemModel",""); continue; } // model retired: look again
-    if(!r.ok) throw await gemErr(r);
-    const j=await r.json(); const cand=j.candidates&&j.candidates[0];
-    const text=cand&&cand.content&&(cand.content.parts||[]).filter(p=>!p.thought).map(p=>p.text||"").join("");
-    if(!text||!text.trim()) throw {code:"g_blocked"};
-    return {text,truncated:cand.finishReason==="MAX_TOKENS"};
+  let model=await gemModel(key,signal,false);
+  try{ return await gemStream(key,model,b64,signal,onText); }
+  catch(e){
+    if(e&&e.code==="g_404"){ store.set("gemModel",""); model=await gemModel(key,signal,true); return await gemStream(key,model,b64,signal,onText); } // model retired: look again
+    if(e&&e.code==="g_slow"){ // too slow: one more go with the lighter model
+      try{ onText&&onText(""); }catch{}
+      const lite=await gemLite(key,signal);
+      try{ return await gemStream(key,lite,b64,signal,onText); }
+      catch(e2){ if(e2&&e2.code==="g_slow"&&!(e2.text||"").trim()&&e.text) e2.text=e.text; throw e2; }
+    }
+    throw e;
   }
-  throw {code:"g_http"};
 }
 function gemState(){
   const k=(store.get("gemKey")||"").trim(); sample=k?"gem":null;
