@@ -454,7 +454,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৭ নভেম্বর সকাল (Gemini ব্যস্ত থাকলে হালকা মডেল)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৭ নভেম্বর সকাল ৮টা (Gemini তিন রকম চেষ্টা)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -21928,7 +21928,7 @@ async function run(){
         rate_limited:"এখন অনেক বেশি অনুরোধ হয়েছে। এক মিনিট পরে আবার চাপুন।",
         image_rejected:"এই ছবিটা খোলা গেল না। JPG বা PNG ছবি দিন।",images_unavailable:"এই জায়গা থেকে ছবি পাঠানো যাচ্ছে না। claude.ai-তে পেজটা খুলুন।",
         refused:"এই ছবিটা পড়া গেল না। অন্য ছবি দিয়ে চেষ্টা করুন।",...GEMMSG}[e.code]||"সংযোগে সমস্যা হল। আবার \"টাইপ করুন\" চাপুন।";
-      setStatus(msg+(e.code==="g_http"&&(e.status||e.message)?` [Google: ${e.status||""} ${String(e.message||"").slice(0,140)}]`:""),e.code!=="cancelled"); stopped=true; break;
+      setStatus(msg+(e.code==="g_http"?` [Google: ${e.status||"?"} ${String(e.message||"").slice(0,140)}]`:""),e.code!=="cancelled"); stopped=true; break;
     }
     refit();
   }
@@ -23920,6 +23920,16 @@ async function gemStream(key,model,b64,signal,onText){
   }
   throw lastErr||{code:"g_http"};
 }
+async function gemPlain(key,model,b64,signal){ // the old way, exactly as before (no streaming, no think setting): last resort
+  const body=JSON.stringify({contents:[{role:"user",parts:[{inline_data:{mime_type:"image/jpeg",data:b64}},{text:PROMPT}]}],generationConfig:{temperature:0,maxOutputTokens:16000}});
+  let r; try{ r=await fetch(GEMBASE+model+":generateContent",{method:"POST",signal,headers:{"content-type":"application/json","x-goog-api-key":key},body}); }
+  catch(e){ throw {code:e&&e.name==="AbortError"?"cancelled":"offline"}; }
+  if(!r.ok) throw await gemErr(r);
+  const j=await r.json(); const cand=j.candidates&&j.candidates[0];
+  const text=cand&&cand.content&&(cand.content.parts||[]).filter(p=>!p.thought).map(p=>p.text||"").join("");
+  if(!text||!text.trim()) throw {code:"g_blocked"};
+  return {text,truncated:cand.finishReason==="MAX_TOKENS"};
+}
 async function apiRead(file,{signal,onText}){
   const key=(store.get("gemKey")||"").trim(); if(!key) throw {code:"g_no_key"};
   const b64=await shrink(file);
@@ -23931,7 +23941,11 @@ async function apiRead(file,{signal,onText}){
       try{ onText&&onText(""); }catch{}
       const lite=await gemLite(key,signal);
       try{ return await gemStream(key,lite,b64,signal,onText); }
-      catch(e2){ if(e2&&!(e2.text||"").trim()&&e.text) e2.text=e.text; if(e2&&e2.code==="g_http"&&!e2.status&&e.status){ e2.status=e.status; e2.message=e.message; } throw e2; }
+      catch(e2){
+        if(e2&&(e2.code==="g_http"||e2.code==="offline")&&!(e.text||"").trim()){ // both new-style tries failed: the old way, as it worked before
+          try{ onText&&onText("পুরনো পদ্ধতিতে পড়ছে… (১-৩ মিনিট লাগতে পারে)"); }catch{}
+          try{ return await gemPlain(key,model,b64,signal); }catch(e3){ if(e3&&e3.code==="g_http"&&!e3.status&&e.status){ e3.status=e.status; e3.message=e.message; } throw e3; } }
+        if(e2&&!(e2.text||"").trim()&&e.text) e2.text=e.text; if(e2&&e2.code==="g_http"&&!e2.status&&e.status){ e2.status=e.status; e2.message=e.message; } throw e2; }
     }
     throw e;
   }
