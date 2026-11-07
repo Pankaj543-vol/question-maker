@@ -454,7 +454,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৭ নভেম্বর সকাল ৯টা (key পরীক্ষা বোতাম)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৭ নভেম্বর সকাল ৯টা ২ ((৪) ধাঁচের নম্বরও সাজায়)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -21698,7 +21698,7 @@ const isRow=l=>!/^\$\$/.test(l)&&!/^\[/.test(l)&&!/\|\|/.test(l)&&(l.replace(/\$
 function cellsOf(l){let t=l.trim();if(t.startsWith("|"))t=t.slice(1);if(t.endsWith("|"))t=t.slice(0,-1);
   const out=[];let cur="",inM=false;for(const ch of t){if(ch==="$")inM=!inM;if(ch==="|"&&!inM){out.push(cur.trim());cur="";}else cur+=ch;}out.push(cur.trim());return out;}
 const FIG=/^\[\s*(?:চিত্র|ছবি|figure|diagram)\s*\|\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*\|\s*([^\]]*)\]?$/i;
-const QNUM=/^(?:Q\.?\s*)?([0-9০-৯]{1,3})\s*[.।)]/;
+const QNUM=/^(?:Q\.?\s*)?(?:\(\s*([0-9০-৯]{1,3})\s*\)|([0-9০-৯]{1,3})\s*[.।)])/; // 1. ১। 1) and (1)
 const OPT=/^(?:\(\s*(?:[a-hA-Hক-ঙ]|[ivx]{1,4})\s*\)|(?:[a-hA-H]|[ivx]{1,4})\s*\)|অথবা|Or\b|OR\b)/;
 const HDR=/^\[\s*HEADER\s*\|(.*)\]$/i;
 const BOXHTML='<span class="box" contenteditable="false"></span>';
@@ -21947,14 +21947,14 @@ $("clear").onclick=()=>{closeEq();closeFig();snapshot();$("doc").innerHTML="<p><
 function numOf(el){
   if(!el||el.classList.contains("hdr")) return null;
   const t=[...el.childNodes].filter(n=>!(n.nodeType===1&&n.classList.contains("mk"))).map(n=>n.textContent).join("").replace(/^\s+/,"");
-  const m=t.match(QNUM); return m?toNum(m[1]):null;
+  const m=t.match(QNUM); return m?toNum(m[1]||m[2]):null;
 }
 function sortQuestions(quiet){
   const doc=$("doc"), hdr=doc.querySelector(":scope > .hdr");
   const kids=[...doc.children].filter(e=>e!==hdr&&!e.classList.contains("live"));
   // sections (## headings with numbers) win; otherwise numbered questions
   const secs=kids.filter(e=>e.matches("h3.sec")&&numOf(e)!==null);
-  const isStart=secs.length?(e=>secs.includes(e)):(e=>e.matches("p.q")&&numOf(e)!==null);
+  const isStart=secs.length?(e=>secs.includes(e)):(e=>e.tagName==="P"&&!e.matches(".opt")&&numOf(e)!==null);
   const pre=[],groups=[];let cur=null,pend=[];
   for(const e of kids){
     if(secs.length&&e.matches("h3.sec")&&numOf(e)===null){pend.push(e);continue;}
