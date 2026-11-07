@@ -454,7 +454,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৬ নভেম্বর সকাল (Gemini দ্রুত টাইপ)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৭ নভেম্বর সকাল (Gemini ব্যস্ত থাকলে হালকা মডেল)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -21928,7 +21928,7 @@ async function run(){
         rate_limited:"এখন অনেক বেশি অনুরোধ হয়েছে। এক মিনিট পরে আবার চাপুন।",
         image_rejected:"এই ছবিটা খোলা গেল না। JPG বা PNG ছবি দিন।",images_unavailable:"এই জায়গা থেকে ছবি পাঠানো যাচ্ছে না। claude.ai-তে পেজটা খুলুন।",
         refused:"এই ছবিটা পড়া গেল না। অন্য ছবি দিয়ে চেষ্টা করুন।",...GEMMSG}[e.code]||"সংযোগে সমস্যা হল। আবার \"টাইপ করুন\" চাপুন।";
-      setStatus(msg,e.code!=="cancelled"); stopped=true; break;
+      setStatus(msg+(e.code==="g_http"&&(e.status||e.message)?` [Google: ${e.status||""} ${String(e.message||"").slice(0,140)}]`:""),e.code!=="cancelled"); stopped=true; break;
     }
     refit();
   }
@@ -23927,11 +23927,11 @@ async function apiRead(file,{signal,onText}){
   try{ return await gemStream(key,model,b64,signal,onText); }
   catch(e){
     if(e&&e.code==="g_404"){ store.set("gemModel",""); model=await gemModel(key,signal,true); return await gemStream(key,model,b64,signal,onText); } // model retired: look again
-    if(e&&e.code==="g_slow"){ // too slow: one more go with the lighter model
+    if(e&&(e.code==="g_slow"||e.code==="g_http"||e.code==="offline")){ // too slow, busy or a broken answer: one more go with the lighter model
       try{ onText&&onText(""); }catch{}
       const lite=await gemLite(key,signal);
       try{ return await gemStream(key,lite,b64,signal,onText); }
-      catch(e2){ if(e2&&e2.code==="g_slow"&&!(e2.text||"").trim()&&e.text) e2.text=e.text; throw e2; }
+      catch(e2){ if(e2&&!(e2.text||"").trim()&&e.text) e2.text=e.text; if(e2&&e2.code==="g_http"&&!e2.status&&e.status){ e2.status=e.status; e2.message=e.message; } throw e2; }
     }
     throw e;
   }
