@@ -454,7 +454,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৭ নভেম্বর সকাল ৮টা (Gemini তিন রকম চেষ্টা)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৭ নভেম্বর সকাল ৯টা (key পরীক্ষা বোতাম)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -498,6 +498,8 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
       <div class="step" id="gemstep">
         <h2><span>✦</span><b id="gemHead" style="font-weight:600">ছবি থেকে টাইপ: Gemini key (ফ্রি, ঐচ্ছিক)</b></h2>
         <div class="row"><input id="gemkey" type="password" placeholder="AQ.… বা AIza…" autocomplete="off" style="flex:1;min-width:0;font:inherit;font-size:.9rem;padding:8px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--fg)"><button class="btn" id="gemsave">রাখুন</button><button class="btn" id="gemdel" hidden>মুছুন</button></div>
+        <div class="row" style="margin-top:6px"><button class="btn" id="gemTest" hidden>🔍 key পরীক্ষা করুন</button></div>
+        <div id="gemTestOut" class="small" hidden style="margin-top:6px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);white-space:pre-wrap;word-break:break-word;user-select:text"></div>
         <p class="small" id="gemnote" style="margin:6px 0 0">key দিলে খাতার ছবি দিয়ে "ছবি থেকে টাইপ করুন" চাপলেই এখানে টাইপ হবে। key না দিলেও অ্যাপ আগের মতো সব চলবে, তখন Gemini অ্যাপ থেকে পেস্ট করবেন।</p>
         <details style="margin-top:6px"><summary class="small" style="cursor:pointer;color:var(--accent);font-weight:600">key কীভাবে পাবেন (একবারই করতে হবে)</summary>
           <ol class="small" style="margin:6px 0 0;padding-left:1.2em;line-height:1.7">
@@ -23846,7 +23848,7 @@ const GEMMSG={
   g_quota:"Google-এর ফ্রি সীমা এখন শেষ, অথবা এই অ্যাকাউন্টে ফ্রি সীমা দেওয়া হয়নি। কিছুক্ষণ পরে বা কাল আবার চেষ্টা করুন। ততক্ষণ Gemini অ্যাপে টাইপ করিয়ে পেস্ট-ঘরে দিন।",
   g_denied:"Google এই key দিয়ে ব্যবহার করতে দিচ্ছে না। AI Studio-তে নতুন key বানিয়ে দেখুন, নয়তো Gemini অ্যাপ থেকে পেস্ট করুন।",
   g_blocked:"Gemini এই ছবিটা পড়ল না। অন্য ছবি দিন, নয়তো Gemini অ্যাপ থেকে পেস্ট করুন।",
-  g_http:"Gemini থেকে উত্তর এল না। একটু পরে আবার চাপুন, নয়তো Gemini অ্যাপ থেকে পেস্ট করুন।",
+  g_http:"Gemini থেকে উত্তর এল না। ওপরে Gemini key-র নিচে \"🔍 key পরীক্ষা করুন\" চাপুন, আসল কারণ দেখাবে।",
   g_slow:"Gemini ২ মিনিট অপেক্ষা করেও কিছু পাঠাল না, তাই থামানো হল (হালকা মডেলেও একবার চেষ্টা করা হয়েছে)। একটু পরে আবার \"টাইপ করুন\" চাপুন, নয়তো Gemini অ্যাপে টাইপ করিয়ে পেস্ট-ঘরে দিন।",
   g_404:"Gemini-র মডেল খুঁজে পাওয়া গেল না। একটু পরে আবার চাপুন।"
 };
@@ -23944,17 +23946,50 @@ async function apiRead(file,{signal,onText}){
       catch(e2){
         if(e2&&(e2.code==="g_http"||e2.code==="offline")&&!(e.text||"").trim()){ // both new-style tries failed: the old way, as it worked before
           try{ onText&&onText("পুরনো পদ্ধতিতে পড়ছে… (১-৩ মিনিট লাগতে পারে)"); }catch{}
-          try{ return await gemPlain(key,model,b64,signal); }catch(e3){ if(e3&&e3.code==="g_http"&&!e3.status&&e.status){ e3.status=e.status; e3.message=e.message; } throw e3; } }
+          let e3=null;
+          for(const m of [model,...GEM_SAFE.filter(x=>x!==model)]){
+            try{ const res=await gemPlain(key,m,b64,signal); if(m!==model) store.set("gemModel",m); return res; }
+            catch(x){ e3=e3||x; if(!x||(x.code!=="g_http"&&x.code!=="offline")) { e3=x; break; } } }
+          if(e3&&e3.code==="g_http"&&!e3.status&&e.status){ e3.status=e.status; e3.message=e.message; } throw e3; }
         if(e2&&!(e2.text||"").trim()&&e.text) e2.text=e.text; if(e2&&e2.code==="g_http"&&!e2.status&&e.status){ e2.status=e.status; e2.message=e.message; } throw e2; }
     }
     throw e;
   }
 }
+/* key check: tries several Gemini models with a tiny request, shows Google's exact answer, keeps the first one that works */
+const GEM_SAFE=["models/gemini-2.5-flash","models/gemini-flash-latest","models/gemini-2.0-flash","models/gemini-2.5-flash-lite","models/gemini-flash-lite-latest"];
+async function gemTry(key,model,signal){
+  const body=JSON.stringify({contents:[{role:"user",parts:[{text:"Reply with the single word OK."}]}],generationConfig:{temperature:0,maxOutputTokens:400}});
+  let r; try{ r=await fetch(GEMBASE+model+":generateContent",{method:"POST",signal,headers:{"content-type":"application/json","x-goog-api-key":key},body}); }
+  catch(e){ return {ok:false,why:"ইন্টারনেট/সংযোগ সমস্যা ("+(e&&e.message||e)+")"}; }
+  if(r.ok) return {ok:true};
+  let m=""; try{ const j=await r.json(); m=(j.error&&((j.error.status||"")+" "+(j.error.message||"")))||""; }catch{}
+  return {ok:false,why:r.status+" "+m.slice(0,220)};
+}
+$("gemTest").onclick=async()=>{
+  const key=(store.get("gemKey")||"").trim(); const out=$("gemTestOut"); out.hidden=false; if(!key){ out.textContent="আগে key বসিয়ে রাখুন।"; return; }
+  const btn=$("gemTest"); btn.disabled=true; const lines=[]; const show=()=>{ out.textContent=lines.join("\n"); };
+  lines.push("key: "+key.slice(0,6)+"… ("+key.length+" অক্ষর)"); show();
+  let list=[];
+  try{ const r=await fetch(GEMBASE+"models?pageSize=200",{headers:{"x-goog-api-key":key}});
+    if(r.ok){ const j=await r.json(); list=(j.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes("generateContent")).map(m=>m.name); lines.push("মডেলের তালিকা পাওয়া গেল: "+list.length+"টা"); }
+    else { let m=""; try{const j=await r.json(); m=(j.error&&((j.error.status||"")+" "+(j.error.message||"")))||"";}catch{} lines.push("মডেলের তালিকা আসেনি: "+r.status+" "+m.slice(0,220)); } }
+  catch(e){ lines.push("Google-এ পৌঁছানো গেল না: "+(e&&e.message||e)); }
+  show();
+  const picked=store.get("gemModel"); const cand=[...new Set([picked,...GEM_SAFE].filter(Boolean))].filter(n=>!list.length||list.includes(n)||n===picked).slice(0,5);
+  let good="";
+  for(const m of cand){ lines.push("… "+m.replace("models/","")+" দেখছি"); show();
+    const t=await gemTry(key,m); lines[lines.length-1]=(t.ok?"✓ ":"✗ ")+m.replace("models/","")+(t.ok?" — কাজ করছে":" — "+t.why); show();
+    if(t.ok){ good=m; break; } }
+  if(good){ store.set("gemModel",good); lines.push("\nএই key ঠিক আছে। এখন থেকে "+good.replace("models/","")+" দিয়ে টাইপ হবে। এবার \"ছবি থেকে টাইপ করুন\" চাপুন।"); }
+  else lines.push("\nকোনো মডেলেই চলল না। এই লেখাটার স্ক্রিনশট পাঠান, ✗ চিহ্নের পাশে Google-এর আসল কারণ আছে।");
+  show(); btn.disabled=false;
+};
 function gemState(){
   const k=(store.get("gemKey")||"").trim(); sample=k?"gem":null;
   $("gemkey").value=k?k.slice(0,8)+"…":""; $("gemkey").dataset.saved=k?"1":""; $("gemdel").hidden=!k;
   $("gemHead").textContent=k?"ছবি থেকে টাইপ: Gemini key ✓":"ছবি থেকে টাইপ: Gemini key (ফ্রি, ঐচ্ছিক)";
-  $("go").hidden=!k; renderThumbs();
+  $("go").hidden=!k; $("gemTest").hidden=!k; renderThumbs();
 }
 $("gemkey").addEventListener("focus",()=>{if($("gemkey").dataset.saved){$("gemkey").value="";}});
 $("gemsave").onclick=()=>{const v=$("gemkey").value.trim();
