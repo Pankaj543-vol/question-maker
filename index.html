@@ -458,7 +458,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৮ নভেম্বর সন্ধ্যা ২ (মুখে বলার ঘরে নম্বর-বন্ধনী)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৮ নভেম্বর রাত ("এক নম্বর" বললেও চলে)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -22479,8 +22479,9 @@ function buildDict(){
       if(cur&&cur.kind==="q"&&!cur.t&&/^(বিভাগ|Group|Section)(\s|$|[-–:])/i.test(p.t)){ cur.kind="sec"; cur.label=""; cur.t=p.t; n--; n=1; dotted=null; cur=null; continue; }
       const c=textLine(); c.t=(/\s$/.test(c.t)?c.t+p.t:(c.t+" "+p.t)).trim(); continue; }
     const c=p.c;
-    if(c==="newq"){ add("q",lab(n++)); sn=0; on=0; }
-    else if(c==="sub"){ add("sub",subLab(++sn)); on=0; }
+    const empty=cur&&!cur.t.replace(/[\s।?]/g,"")&&!cur.mk;
+    if(c==="newq"){ if(!(empty&&cur.kind==="q")) add("q",lab(n++)); sn=0; on=0; }
+    else if(c==="sub"){ if(!(empty&&cur.kind==="sub")) add("sub",subLab(++sn)); on=0; }
     else if(c==="line"){ add("plain",""); }
     else if(c==="opt"){ if(cur&&cur.kind==="opt"){ cur.t=cur.t.replace(/\s+$/,"")+"   "+oLab(os,++on)+" "; } else { on=1; add("opt",""); cur.t=oLab(os,1)+" "; } }
     else if(c==="marks"){ const tgt=[...L].reverse().find(x=>x.kind==="q"||x.kind==="sub")||textLine(); tgt.mk=window.marksTextFor(p.v,qs==="bn"||qs==="bnd"); }
@@ -22488,7 +22489,7 @@ function buildDict(){
     else if(c==="stop"){ const x=textLine(); x.t=x.t.replace(/\s+$/,"")+"।"; }
     else if(c==="qmark"){ const x=textLine(); x.t=x.t.replace(/\s+$/,"")+"?"; }
   }
-  return L.filter(x=>x.kind!=="q"||x.t||x.mk).map(x=>{
+  return L.filter(x=>(x.kind!=="q"&&x.kind!=="sub")||x.t.replace(/[।?\s]/g,"")||x.mk).map(x=>{
     if(x.kind==="sec") return "## "+x.t.replace(/\s+/g," ");
     const body=x.kind==="opt"||x.kind==="plain"?x.t.replace(/\s+$/,""):endMark(x.t||"");
     return ((x.label?x.label+" ":"")+body).trim()+(x.mk?" || "+x.mk:""); });
@@ -23026,7 +23027,7 @@ async function micMeter(m){ // a small bar that moves with your voice, so you ca
     const tick=()=>{ if(mic!==m) return; an.getByteTimeDomainData(buf); let mx=0; for(const v of buf) mx=Math.max(mx,Math.abs(v-128));
       const el=$("micLvl"); if(el) el.style.width=Math.min(100,mx*2.2)+"%"; requestAnimationFrame(tick); };
     tick();
-  }catch(e){ if(mic===m) micPill("মাইক খোলা যাচ্ছে না। ল্যাপটপে মাইকের অনুমতি দেখুন।"); }
+  }catch(e){ if(mic===m) micPill("মাইক খোলা যাচ্ছে না। মাইকের অনুমতি দিতে হবে (নিচের লেখা দেখুন)।"); }
 }
 function micRun(){ // one sentence per round (steadier on Android), restarts by itself until "থামান"
   const m=mic; if(!m) return;
@@ -23036,7 +23037,7 @@ function micRun(){ // one sentence per round (steadier on Android), restarts by 
     m.interim=int.trim(); if(fin.trim()){ dictFinal(m,fin); m.interim=""; } micShow(); };
   rec.onerror=e=>{ const c=e.error; m.lastErr=c;
     if(c&&!["no-speech","aborted"].includes(c)) micPill("সমস্যা: "+({"network":"ইন্টারনেট/Google-এর কথা শোনার পরিষেবা পাওয়া যাচ্ছে না","not-allowed":"মাইকের অনুমতি নেই","service-not-allowed":"এই ব্রাউজারে কথা শোনা বন্ধ করা আছে","audio-capture":"মাইক পাওয়া যাচ্ছে না","language-not-supported":"এই ভাষা চলছে না"}[c]||c));
-    if(c==="not-allowed"||c==="service-not-allowed"){ m.live=false; setStatus("মাইকের অনুমতি নেই। ঠিকানার পাশের 🔒 চিহ্নে চেপে Microphone → Allow করুন, অথবা ফোনের Settings-এ Chrome-কে মাইকের অনুমতি দিন।",true); }
+    if(c==="not-allowed"||c==="service-not-allowed"){ m.live=false; setStatus("মাইকের অনুমতি বন্ধ আছে। মোবাইলে: Chrome খুলুন → ওপরে ডানে ⋮ → Settings → Site settings → Microphone → নিচে \"Blocked\" তালিকায় pankaj543-vol.github.io-তে চেপে Allow করুন। তারপর ফোনের Settings → Apps → Chrome → Permissions → Microphone → Allow। শেষে অ্যাপটা বন্ধ করে আবার খুলুন। ল্যাপটপে: ঠিকানার পাশের 🔒 চিহ্ন → Microphone → Allow।",true); }
     else if(c==="network"){ m.live=false; setStatus("মুখে বলে লেখার জন্য ইন্টারনেট লাগবে।",true); }
     else if(c==="audio-capture"){ m.live=false; setStatus("মাইক পাওয়া যাচ্ছে না। মাইক বন্ধ করা আছে কিনা দেখুন।",true); }
     else if(c==="language-not-supported"){ m.live=false; setStatus("এই ভাষা এখানে চলছে না। ভাষা বদলে দেখুন।",true); }
@@ -23100,6 +23101,7 @@ const CMDS=[
   ["line",/^(?:নতুন\s*লাইন|new\s+line)/i],
   ["opt",/^(?:অপশন|অপশান|option)/i],
   ["marks",new RegExp("^(?:নম্বর|নাম্বার|marks?)\\s+("+NUMRX+")(?:\\s*(?:গুণ|গুন|গুণে|x|×|into|times|multiplied\\s+by)\\s*("+NUMRX+"))?(?=\\s|$|[,.।])","i")],
+  ["marks2",new RegExp("^("+NUMRX+")(?:\\s*(?:গুণ|গুন|গুণে|x|×|into|times)\\s*("+NUMRX+"))?\\s*(?:নম্বর|নাম্বার|নম্বরের|নাম্বারের|marks?)(?=\\s|$|[,.।])","i")],
   ["blank",/^(?:ফাঁকা|ফাকা|blank)/i],
   ["stop",/^(?:দাঁড়ি|দাড়ি|দাঁড়ি|full\s*stop)/i],
   ["qmark",/^(?:প্রশ্ন\s*চিহ্ন|প্রশ্নবোধক(?:\s*চিহ্ন)?|question\s+mark)/i],
@@ -23108,11 +23110,11 @@ function splitCmds(s){ // text → [{t}|{c,v}]
   const out=[]; let buf="", i=0; s=String(s);
   while(i<s.length){
     const atWord=i===0||/[\s,.।]/.test(s[i-1]); let hit=null;
-    if(atWord){ const rest=s.slice(i); for(const [c,rx] of CMDS){ const m=rest.match(rx); if(m&&(c==="marks"||/^(?:$|[\s,.।?])/.test(rest.slice(m[0].length)))){ hit={c,len:m[0].length,v:c==="marks"?(toN(m[1])+(m[2]!==undefined?"x"+toN(m[2]):"")):null}; break; } } }
-    if(hit){ if(buf.trim()) out.push({t:buf.trim()}); buf=""; out.push({c:hit.c,v:hit.v}); i+=hit.len; while(i<s.length&&/[\s,]/.test(s[i])) i++; continue; }
+    if(atWord){ const rest=s.slice(i); for(const [c,rx] of CMDS){ const m=rest.match(rx); if(m&&(c==="marks"||c==="marks2"||/^(?:$|[\s,.।?])/.test(rest.slice(m[0].length)))){ hit={c:c==="marks2"?"marks":c,len:m[0].length,v:(c==="marks"||c==="marks2")?(toN(m[1])+(m[2]!==undefined?"x"+toN(m[2]):"")):null}; break; } } }
+    if(hit){ if(buf.trim()) out.push({t:buf.trim()}); buf=""; out.push({c:hit.c,v:hit.v}); i+=hit.len; while(i<s.length&&/[\s,।.]/.test(s[i])) i++; continue; }
     buf+=s[i]; i++;
   }
-  if(buf.trim()) out.push({t:buf.trim()}); return out;
+  if(buf.trim()) out.push({t:buf.trim()}); return out.filter(p=>p.t===undefined||p.t.replace(/[\s,।.]/g,""));
 }
 function dictCmd(m,c,v){ // apply one command inside a running dictation
   micShow(); const blk=topBlock(m.node);
