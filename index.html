@@ -86,6 +86,10 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 .doc h2{font-size:1.12em;font-weight:700;margin:.35em 0 .3em;text-align:center}
 .doc h3.sec{font-size:1em;font-weight:700;margin:.6em 0 .25em;padding-bottom:1px;border-bottom:1px solid #999}
 .doc .mk{float:right;font-weight:700;margin-left:1em;text-indent:0}
+.qbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 6px}
+.qbar .qbmk{display:inline-flex;gap:4px}
+.qbar input{width:8.5em;font:inherit;font-size:.9rem;padding:7px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--fg)}
+.qbhelp{margin:0 0 8px;padding:8px;border:1px dashed var(--line);border-radius:8px;line-height:1.7}
 .doc .hdr{text-align:center;margin-bottom:.5em;line-height:1.28;position:relative}
 .doc .hdr .by{font-size:.72em;font-weight:500;line-height:1.2;color:#333;margin-bottom:.15em}
 .doc .hdr .by.r{text-align:right}.doc .hdr .by.l{text-align:left}
@@ -454,7 +458,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৭ নভেম্বর সকাল ৯টা ২ ((৪) ধাঁচের নম্বরও সাজায়)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৮ নভেম্বর সন্ধ্যা (মুখে বললে নম্বর নিজে বসে)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -812,6 +816,19 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
           <button class="btn" id="symBtn">∑ অংকের চিহ্ন</button>
           <button class="btn" id="rboxBtn">☐ লাইনের শেষে ডানদিকে বক্স</button>
         </div>
+        <div class="qbar" role="group" aria-label="প্রশ্নের নম্বর বসান">
+          <button class="btn" id="qbNew">＋ নতুন প্রশ্ন</button>
+          <button class="btn" id="qbSub">＋ ছোট প্রশ্ন</button>
+          <button class="btn" id="qbOpt">＋ অপশন</button>
+          <span class="qbmk"><input id="qbMkV" inputmode="text" placeholder="নম্বর: 2 বা 1x5" autocomplete="off"><button class="btn" id="qbMk">নম্বর বসান</button></span>
+          <label class="small">ধাঁচ <select id="qfMain" aria-label="মূল প্রশ্নের নম্বর"><option>1.</option><option>১।</option><option>(1)</option></select></label>
+          <select id="qfSub" aria-label="ছোট প্রশ্নের নম্বর"><option>(i)</option><option>(ক)</option><option>(a)</option></select>
+          <select id="qfOpt" aria-label="অপশনের চিহ্ন"><option>(a)</option><option>(ক)</option><option>(i)</option></select>
+          <button class="btn" id="qbHelp">🎤 মুখে কী বলবেন?</button>
+        </div>
+        <div class="small qbhelp" id="qbHelpBox" hidden>"🎤 বলে লিখুন" চালু করে কথার মাঝে এই আদেশগুলো বলুন, অ্যাপ লিখবে না, কাজটা করবে:<br>
+          <b>"নতুন প্রশ্ন"</b> → পরের নম্বর (1., 2. …) · <b>"ছোট প্রশ্ন"</b> → (i), (ii) … · <b>"অপশন"</b> → (a), (b) … পরপর · <b>"নম্বর দুই"</b> / <b>"নম্বর এক গুণ পাঁচ"</b> → ডানদিকে 2 / 1×5=5 · <b>"ফাঁকা"</b> → ________ · <b>"দাঁড়ি"</b> → । · <b>"প্রশ্নচিহ্ন"</b> → ? · <b>"নতুন লাইন"</b><br>
+          যেমন: "নতুন প্রশ্ন সঠিক উত্তর নির্বাচন করো নম্বর এক গুণ পাঁচ ছোট প্রশ্ন জলের সংকেত কী প্রশ্নচিহ্ন অপশন H2O অপশন CO2"। ইংরেজিতে বললে: "new question", "sub question", "option", "marks two", "blank", "full stop", "question mark"। মাইক ভুল শুনলে ওপরের বোতাম দিয়ে ঠিক করুন।</div>
         <div class="eqedit findbar" id="findbar" hidden>
           <div class="row" style="justify-content:space-between"><b style="font-size:.92rem">খুঁজুন ও বদলান</b><button class="btn" id="findClose" style="padding:5px 10px">✕ বন্ধ</button></div>
           <div class="row"><input class="libin" id="findQ" placeholder="কী খুঁজবেন? যেমন: *" autocomplete="off"></div>
@@ -22985,7 +23002,7 @@ function micRun(){ // one sentence per round (steadier on Android), restarts by 
   const rec=new SR(); m.rec=rec; rec.lang=(m.lang==="sa"||m.lang==="sa-dev")?"hi-IN":m.lang; // Sanskrit: heard as Hindi, then written in Bengali letters rec.interimResults=true; rec.continuous=false; rec.maxAlternatives=1;
   rec.onresult=e=>{ m.quiet=0; if(m.lang) micPill({"bn-IN":"শুনছি… বলুন","en-IN":"Listening… speak","hi-IN":"सुन रहा हूँ… बोलिए","ar-SA":"أستمع… تحدث","sa":"শুনছি… সংস্কৃতে বলুন","sa-dev":"शृणोमि… संस्कृते वदतु"}[m.lang]||"শুনছি…"); let fin="",int=""; for(let i=0;i<e.results.length;i++){ const s=e.results[i][0].transcript; if(e.results[i].isFinal) fin+=s; else int+=s; }
     if(m.lang==="sa"){ fin=deva2beng(fin); int=deva2beng(int); }
-    m.interim=int.trim(); if(fin.trim()){ m.final=(m.final+" "+fin.trim()).trim(); m.interim=""; } micShow(); };
+    m.interim=int.trim(); if(fin.trim()){ dictFinal(m,fin); m.interim=""; } micShow(); };
   rec.onerror=e=>{ const c=e.error; m.lastErr=c;
     if(c&&!["no-speech","aborted"].includes(c)) micPill("সমস্যা: "+({"network":"ইন্টারনেট/Google-এর কথা শোনার পরিষেবা পাওয়া যাচ্ছে না","not-allowed":"মাইকের অনুমতি নেই","service-not-allowed":"এই ব্রাউজারে কথা শোনা বন্ধ করা আছে","audio-capture":"মাইক পাওয়া যাচ্ছে না","language-not-supported":"এই ভাষা চলছে না"}[c]||c));
     if(c==="not-allowed"||c==="service-not-allowed"){ m.live=false; setStatus("মাইকের অনুমতি নেই। ঠিকানার পাশের 🔒 চিহ্নে চেপে Microphone → Allow করুন, অথবা ফোনের Settings-এ Chrome-কে মাইকের অনুমতি দিন।",true); }
@@ -23012,6 +23029,101 @@ try{ const ml=localStorage.getItem("micLang"); if(ml) $("micLang").value=ml; }ca
 $("micLang").onchange=()=>{ try{localStorage.setItem("micLang",$("micLang").value);}catch{} document.querySelectorAll("input[name=mlang]").forEach(r=>r.checked=r.value===$("micLang").value); if(mic){ const k=mic.kind; micStop(); micStart(k); } };
 document.querySelectorAll("input[name=mlang]").forEach(r=>{ r.checked=r.value===$("micLang").value; r.onchange=()=>{ $("micLang").value=r.value; $("micLang").onchange(); }; });
 if(!SR) ["micDict","micDoc"].forEach(id=>{ const b=$(id); if(b) b.title="এই ব্রাউজারে চলে না, Chrome-এ খুলুন"; });
+/* ---------- spoken commands while dictating: "নতুন প্রশ্ন", "ছোট প্রশ্ন", "অপশন", "নম্বর দুই" … the app puts the numbers ---------- */
+(function(){ // own scope: names here never clash with the rest of the app
+const QF=()=>({q:$("qfMain").value,s:$("qfSub").value,o:$("qfOpt").value});
+const ROM=n=>{let r="",x=n;[[10,"x"],[9,"ix"],[5,"v"],[4,"iv"],[1,"i"]].forEach(([v,s])=>{while(x>=v){r+=s;x-=v;}});return r;};
+const BNL="কখগঘঙচছজঝঞটঠডঢণতথদধনপফবভমযরলশষসহ".split("");
+function lab(kind,n){ // kind: "(i)" "(ক)" "(a)"
+  return kind==="(ক)"?"("+(BNL[n-1]||n)+")":kind==="(a)"?"("+String.fromCharCode(96+Math.min(n,26))+")":"("+ROM(n)+")"; }
+function labNum(kind,s){ const m=String(s).match(/^\(\s*([^)\s]+)\s*\)/); if(!m) return 0; const t=m[1];
+  if(kind==="(ক)") return BNL.indexOf(t)+1; if(kind==="(a)") return /^[a-z]$/.test(t)?t.charCodeAt(0)-96:0;
+  if(!/^[ivxl]+$/.test(t)) return 0; for(let i=1;i<60;i++) if(ROM(i)===t) return i; return 0; }
+const qDig=()=>QF().q==="১।"?bn:(x=>String(x));
+function qLabel(n){ const f=QF().q; return f==="১।"?bn(n)+"।":f==="(1)"?"("+n+")":n+"."; }
+function blkText(b){ return b?[...b.childNodes].filter(n=>!(n.nodeType===1&&n.classList.contains("mk"))).map(n=>n.textContent).join("").trim():""; }
+function nextMain(blk){ for(let b=blk;b;b=b.previousElementSibling){ const n=numOf(b); if(n!==null&&!b.classList.contains("hdr")) return n+1; } return 1; }
+function nextSub(blk){ const k=QF().s; for(let b=blk;b;b=b.previousElementSibling){ if(numOf(b)!==null) return 1; const n=labNum(k,blkText(b)); if(n&&!(b.dataset&&b.dataset.optl)) return n+1; } return 1; }
+function newLineAfter(blk,cls,prefix){
+  const d=$("doc"); let p;
+  if(blk&&!blkText(blk)&&!blk.querySelector("img,[data-tex],.mk")&&blk.tagName==="P"){ p=blk; p.innerHTML=""; } // reuse an empty line
+  else { p=document.createElement("p"); if(blk&&blk.parentNode===d) blk.after(p); else d.append(p); }
+  p.className=cls; if(prefix) p.append(document.createTextNode(prefix)); return p; }
+function marksText(v){ // "1 গুণ 5" → 1×5=5, "2" → 2
+  const D=qDig(); const m=String(v).match(/^(\d+)\s*[×x*]\s*(\d+)$/); return m?`${D(m[1])}×${D(m[2])}=${D(m[1]*m[2])}`:D(v); }
+function setMarks(blk,v){ if(!blk) return; const old=blk.querySelector(":scope > .mk"); if(old) old.remove(); if(!v) return; const s=document.createElement("span"); s.className="mk"; s.textContent=marksText(v); blk.prepend(s); }
+// the actions, each returns the line to keep writing in
+function actNewQ(blk){ return newLineAfter(blk,"q",qLabel(nextMain(blk))+" "); }
+function actSub(blk){ return newLineAfter(blk,"opt",lab(QF().s,nextSub(blk))+" "); }
+function actOpt(blk){ const k=QF().o;
+  if(blk&&blk.dataset.optl){ const n=(Number(blk.dataset.optl)||1)+1; blk.dataset.optl=String(n); return {inline:"   "+lab(k,n)+" "}; }
+  const p=newLineAfter(blk,"opt",lab(k,1)+" "); p.dataset.optl="1"; return p; }
+// words → numbers
+const NUMW={"শূন্য":0,"এক":1,"একটা":1,"দুই":2,"দুই":2,"দু":2,"দুটো":2,"তিন":3,"চার":4,"পাঁচ":5,"পাচ":5,"ছয়":6,"ছয়":6,"ছয়":6,"ছ":6,"সাত":7,"আট":8,"নয়":9,"নয়":9,"দশ":10,"এগারো":11,"বারো":12,"তেরো":13,"চোদ্দ":14,"চৌদ্দ":14,"পনেরো":15,"ষোলো":16,"ষোল":16,"সতেরো":17,"আঠারো":18,"উনিশ":19,"কুড়ি":20,"কুড়ি":20,"বিশ":20,"পঁচিশ":25,"ত্রিশ":30,
+  "zero":0,"one":1,"two":2,"to":2,"too":2,"three":3,"four":4,"for":4,"five":5,"six":6,"seven":7,"eight":8,"nine":9,"ten":10,"eleven":11,"twelve":12,"fifteen":15,"twenty":20};
+const NUMRX="(?:[0-9০-৯]+|"+Object.keys(NUMW).sort((a,b)=>b.length-a.length).join("|")+")";
+const toN=w=>/^[0-9০-৯]+$/.test(w)?toNum(w):NUMW[w.toLowerCase()];
+const CMDS=[
+  ["newq",/^(?:নতুন\s*প্রশ্ন|new\s+question)/i],
+  ["sub",/^(?:ছোট\s*প্রশ্ন|sub\s*-?\s*question|small\s+question)/i],
+  ["line",/^(?:নতুন\s*লাইন|new\s+line)/i],
+  ["opt",/^(?:অপশন|অপশান|option)/i],
+  ["marks",new RegExp("^(?:নম্বর|নাম্বার|marks?)\\s+("+NUMRX+")(?:\\s*(?:গুণ|গুন|গুণে|x|×|into|times|multiplied\\s+by)\\s*("+NUMRX+"))?(?=\\s|$|[,.।])","i")],
+  ["blank",/^(?:ফাঁকা|ফাকা|blank)/i],
+  ["stop",/^(?:দাঁড়ি|দাড়ি|দাঁড়ি|full\s*stop)/i],
+  ["qmark",/^(?:প্রশ্ন\s*চিহ্ন|প্রশ্নবোধক(?:\s*চিহ্ন)?|question\s+mark)/i],
+];
+function splitCmds(s){ // text → [{t}|{c,v}]
+  const out=[]; let buf="", i=0; s=String(s);
+  while(i<s.length){
+    const atWord=i===0||/[\s,.।]/.test(s[i-1]); let hit=null;
+    if(atWord){ const rest=s.slice(i); for(const [c,rx] of CMDS){ const m=rest.match(rx); if(m&&(c==="marks"||/^(?:$|[\s,.।?])/.test(rest.slice(m[0].length)))){ hit={c,len:m[0].length,v:c==="marks"?(toN(m[1])+(m[2]!==undefined?"x"+toN(m[2]):"")):null}; break; } } }
+    if(hit){ if(buf.trim()) out.push({t:buf.trim()}); buf=""; out.push({c:hit.c,v:hit.v}); i+=hit.len; while(i<s.length&&/[\s,]/.test(s[i])) i++; continue; }
+    buf+=s[i]; i++;
+  }
+  if(buf.trim()) out.push({t:buf.trim()}); return out;
+}
+function dictCmd(m,c,v){ // apply one command inside a running dictation
+  micShow(); const blk=topBlock(m.node);
+  const go=p=>{ m.node=document.createTextNode(""); p.append(m.node); m.final=""; m.interim=""; m.lead=""; };
+  if(c==="newq") go(actNewQ(blk));
+  else if(c==="sub") go(actSub(blk));
+  else if(c==="line") go(newLineAfter(blk,"",""));
+  else if(c==="opt"){ const r=actOpt(blk); if(r.inline!==undefined) m.final=(m.final.replace(/\s+$/,"")+r.inline); else go(r); }
+  else if(c==="marks") setMarks(blk,v);
+  else if(c==="blank") m.final=(m.final+" ________ ");
+  else if(c==="stop") m.final=m.final.replace(/\s+$/,"")+"।";
+  else if(c==="qmark") m.final=m.final.replace(/\s+$/,"")+"?";
+  refitSoon();
+}
+function dictFinal(m,fin){ // spoken words with commands mixed in
+  if(m.kind!=="doc"||!/^(bn-IN|en-IN)$/.test(m.lang)){ m.final=(m.final+" "+fin.trim()).trim(); return; }
+  for(const p of splitCmds(fin.trim())){ if(p.t!==undefined) m.final=(m.final+" "+p.t).replace(/^\s+/,""); else dictCmd(m,p.c,p.v); }
+}
+// the same as buttons (work with or without the microphone)
+function qbarDo(c,v){
+  if(mic&&mic.kind==="doc"&&mic.node&&mic.node.isConnected){ dictCmd(mic,c,v); micShow(); return; }
+  if(needOwnPaper()) return;
+  let r=lastRange&&$("doc").contains(lastRange.startContainer)?lastRange:null; let blk=r?topBlock(r.startContainer):(lastBlock&&lastBlock.isConnected?lastBlock:null);
+  if(!blk){ const kids=[...$("doc").children].filter(e=>!e.classList.contains("hdr")); blk=kids[kids.length-1]||null; }
+  snapshot(); clearExample();
+  let p=null;
+  if(c==="newq") p=actNewQ(blk); else if(c==="sub") p=actSub(blk);
+  else if(c==="opt"){ const x=actOpt(blk); if(x.inline!==undefined){ blk.append(document.createTextNode(x.inline)); p=blk; } else p=x; }
+  else if(c==="marks"){ setMarks(blk,v); hasExample=false; refit(); setStatus(v?`নম্বর ${marksText(v)} বসানো হল।`:"নম্বর সরানো হল।"); return; }
+  if(p){ const lt=p.lastChild; if(lt&&lt.nodeType===3) lt.nodeValue=lt.nodeValue.replace(/ $/,"\u00A0"); // keep the space after the number while typing
+    const d=$("doc"); try{d.focus({preventScroll:true});}catch{d.focus();} const rr=document.createRange(); rr.selectNodeContents(p); rr.collapse(false); const s=getSelection(); s.removeAllRanges(); s.addRange(rr); lastRange=rr.cloneRange(); lastBlock=p; }
+  hasExample=false; refit();
+}
+["qbNew","qbSub","qbOpt","qbMk"].forEach(id=>{ const b=$(id); b.addEventListener("pointerdown",e=>e.preventDefault()); b.addEventListener("mousedown",e=>e.preventDefault()); });
+$("qbNew").onclick=()=>qbarDo("newq"); $("qbSub").onclick=()=>qbarDo("sub"); $("qbOpt").onclick=()=>qbarDo("opt");
+$("qbMk").onclick=()=>{ let v=$("qbMkV").value.trim().replace(/[০-৯]/g,d=>"০১২৩৪৫৬৭৮৯".indexOf(d)).replace(/\s*[×xX*]\s*/,"x"); if(!/^(\d+(x\d+)?)?$/.test(v)){ setStatus("নম্বর লিখুন, যেমন 2 বা 1x5",true); return; } qbarDo("marks",v); $("qbMkV").value=""; };
+$("qbMkV").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); $("qbMk").click(); } });
+{ try{ const f=JSON.parse(localStorage.getItem("qfmt")||"null"); if(f){ if(f.q)$("qfMain").value=f.q; if(f.s)$("qfSub").value=f.s; if(f.o)$("qfOpt").value=f.o; } }catch{} }
+["qfMain","qfSub","qfOpt"].forEach(id=>$(id).onchange=()=>{ try{localStorage.setItem("qfmt",JSON.stringify(QF()));}catch{} });
+$("qbHelp").onclick=()=>{ $("qbHelpBox").hidden=!$("qbHelpBox").hidden; };
+window.dictFinal=dictFinal;
+})();
 /* ---------- bold, italic and letter size for chosen words (or the whole line) ---------- */
 const FSZ={"-1":0.85,"0":1,"1":1.2,"2":1.4,"3":1.7};
 const fszOf=el=>{let f=1;for(let p=el;p&&p!==$("doc");p=p.parentElement){if(p.classList&&p.classList.contains("fsz"))f*=Number(p.dataset.f)||1;}return f;};
