@@ -458,7 +458,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৮ নভেম্বর সন্ধ্যা (মুখে বললে নম্বর নিজে বসে)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৮ নভেম্বর সন্ধ্যা ২ (মুখে বলার ঘরে নম্বর-বন্ধনী)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -564,10 +564,11 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 
       <div class="step">
         <h2><span>🎤</span>মুখে বলে প্রশ্ন</h2>
-        <p class="small" style="margin:0 0 6px">ঘরে ট্যাপ করে কিবোর্ডের মাইক চেপে বলুন। প্রশ্ন শেষ হলে বলুন <b>"পরের প্রশ্ন"</b>। MCQ-র প্রতিটা উত্তরের আগে বলুন <b>"বিকল্প"</b>। নতুন বিভাগ শুরু করতে বলুন <b>"বিভাগ খ …"</b>।</p>
+        <p class="small" style="margin:0 0 6px">ঘরে ট্যাপ করে কিবোর্ডের মাইক চেপে, বা নিচের 🎤 বোতাম চেপে বলুন। কথার মাঝে বলুন: <b>"নতুন প্রশ্ন"</b> → 1. 2. 3. · <b>"ছোট প্রশ্ন"</b> → (i) (ii) · <b>"অপশন"</b> → (a) (b) · <b>"নম্বর দুই"</b> / <b>"নম্বর এক গুণ পাঁচ"</b> → ডানদিকে 2 / 1×5=5 · <b>"ফাঁকা"</b> → ____ · <b>"দাঁড়ি"</b> · <b>"প্রশ্নচিহ্ন"</b> · <b>"বিভাগ খ …"</b>। না বলে নিচের বোতাম টিপলেও হবে। কেমন দাঁড়াচ্ছে, ঘরের নিচে সঙ্গে সঙ্গে দেখাবে।</p>
         <textarea id="dict" rows="4" placeholder="যেমন: মানবদেহের বৃহত্তম গ্রন্থি কোনটি বিকল্প যকৃৎ বিকল্প অগ্ন্যাশয় পরের প্রশ্ন সালোকসংশ্লেষ কাকে বলে" style="width:100%;box-sizing:border-box;font:inherit;font-size:.9rem;padding:8px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--fg)"></textarea>
         <div class="form" style="margin-top:6px">
           <label>প্রশ্নের নম্বর<select id="qStyle"><option value="en">1. 2. 3.</option><option value="bn">১। ২। ৩।</option><option value="bnd">১. ২. ৩.</option><option value="rom">(i) (ii) (iii)</option><option value="bl">(ক) (খ) (গ)</option><option value="lat">a) b) c)</option></select></label>
+          <label>ছোট প্রশ্নের নম্বর<select id="sStyle"><option value="rom">(i) (ii) (iii)</option><option value="bl">(ক) (খ) (গ)</option><option value="lat">(a) (b) (c)</option></select></label>
           <label>বিকল্পের নম্বর<select id="oStyle"><option value="lat">(a) (b) (c) (d)</option><option value="bl">(ক) (খ) (গ) (ঘ)</option><option value="rom">(i) (ii) (iii) (iv)</option></select></label>
           <label class="full">কোথা থেকে শুরু<select id="qStart"><option value="auto">আগের প্রশ্নের পর থেকে (নিজে থেকে)</option><option value="1">১ থেকে</option></select></label>
         </div>
@@ -579,6 +580,11 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
           <label><input type="radio" name="mlang" value="sa"><span>সংস্কৃত<br><small>বাংলা হরফে</small></span></label>
           <label><input type="radio" name="mlang" value="sa-dev"><span>संस्कृतम्<br><small>দেবনাগরী হরফে</small></span></label>
         </div>
+        <div class="row" style="margin-top:8px;gap:6px">
+          <button class="btn" id="dqNew">＋ নতুন প্রশ্ন</button><button class="btn" id="dqSub">＋ ছোট প্রশ্ন</button><button class="btn" id="dqOpt">＋ অপশন</button>
+          <span style="display:inline-flex;gap:4px"><input id="dqMkV" placeholder="নম্বর: 2 বা 1x5" autocomplete="off" style="width:8.5em;font:inherit;font-size:.9rem;padding:7px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--fg)"><button class="btn" id="dqMk">নম্বর বসান</button></span>
+        </div>
+        <div id="dictLive" hidden aria-live="polite" style="margin-top:8px;padding:8px;border:1px dashed var(--accent);border-radius:8px;white-space:pre-wrap;font-size:.92rem;line-height:1.6"></div>
         <button class="btn wide micbtn" id="micDict" style="margin-top:6px">🎤 বলুন, লেখা হতে থাকবে</button>
         <button class="btn primary" id="dictGo" style="margin-top:8px">নম্বর দিয়ে সাজান</button>
         <div class="cmdplan" id="dictPlan" hidden>
@@ -22447,10 +22453,13 @@ function endMark(q){
 }
 let dictLines=null;
 function buildDict(){
-  const raw=$("dict").value.trim(); if(!raw) return null;
-  const items=raw.split(/\n+|\s*(?:পরের প্রশ্ন|পরবর্তী প্রশ্ন|নতুন প্রশ্ন|next question)\s*[।,.]?\s*/i).map(x=>x.trim()).filter(Boolean);
-  let qs=$("qStyle").value; const os=$("oStyle").value;
-  let n=1, dotted=null; // dotted = {pre:"১", bengali:true} when continuing ১.২ → ১.৩
+  let raw=$("dict").value.trim(); if(!raw) return null;
+  // old words still work: পরের প্রশ্ন = নতুন প্রশ্ন, বিকল্প = অপশন; a new line in the box = a new question
+  raw=raw.replace(/(?:পরের|পরবর্তী)\s*প্রশ্ন|next\s+question/gi," নতুন প্রশ্ন ").replace(/বিকল্প/g," অপশন ")
+    .split(/\n+/).map(l=>l.trim()).filter(Boolean).map(l=>/^(?:নতুন\s*প্রশ্ন|ছোট\s*প্রশ্ন|অপশন|অপশান|option|নম্বর|নাম্বার|new\s+question|sub)/i.test(l)?l:"নতুন প্রশ্ন "+l).join(" ");
+  const T=window.splitCmds(raw);
+  let qs=$("qStyle").value; const os=$("oStyle").value, ss=$("sStyle").value;
+  let n=1, dotted=null;
   if($("qStart").value==="auto"){
     let e=lastBlock&&lastBlock.isConnected?lastBlock:$("doc").lastElementChild;
     while(e&&!e.matches("h3")){
@@ -22461,16 +22470,38 @@ function buildDict(){
       e=e.previousElementSibling;}
   }
   const lab=k=>dotted?dotted.pre+"."+(dotted.bengali?bn(k):k):qLab(qs,k);
-  const out=[];
-  items.forEach(it=>{
-    if(/^(বিভাগ|Group|Section)(\s|$|[-–:])/i.test(it)){out.push("## "+it.replace(/\s+/g," "));n=1;dotted=null;return;}
-    const parts=it.split(/\s*(?:বিকল্প|অপশন|option)\s*[:,]?\s*/i).map(x=>x.trim());
-    const q=parts.shift(); if(!q&&!parts.length) return;
-    out.push(lab(n++)+" "+endMark(q||""));
-    const op=parts.filter(Boolean); if(op.length) out.push(op.map((o,i)=>oLab(os,i+1)+" "+o.replace(/[।,]$/,"")).join("   "));
-  });
-  return out;
+  const subLab=k=>ss==="bl"?"("+(BL[k-1]||k)+")":ss==="lat"?"("+(LAT[k-1]||k)+")":"("+(ROM[k-1]||k)+")";
+  const L=[]; let cur=null, sn=0, on=0;
+  const add=(kind,label)=>{ cur={kind,label,t:"",mk:""}; L.push(cur); return cur; };
+  const textLine=()=>cur||add("q",lab(n++));
+  for(const p of T){
+    if(p.t!==undefined){
+      if(cur&&cur.kind==="q"&&!cur.t&&/^(বিভাগ|Group|Section)(\s|$|[-–:])/i.test(p.t)){ cur.kind="sec"; cur.label=""; cur.t=p.t; n--; n=1; dotted=null; cur=null; continue; }
+      const c=textLine(); c.t=(/\s$/.test(c.t)?c.t+p.t:(c.t+" "+p.t)).trim(); continue; }
+    const c=p.c;
+    if(c==="newq"){ add("q",lab(n++)); sn=0; on=0; }
+    else if(c==="sub"){ add("sub",subLab(++sn)); on=0; }
+    else if(c==="line"){ add("plain",""); }
+    else if(c==="opt"){ if(cur&&cur.kind==="opt"){ cur.t=cur.t.replace(/\s+$/,"")+"   "+oLab(os,++on)+" "; } else { on=1; add("opt",""); cur.t=oLab(os,1)+" "; } }
+    else if(c==="marks"){ const tgt=[...L].reverse().find(x=>x.kind==="q"||x.kind==="sub")||textLine(); tgt.mk=window.marksTextFor(p.v,qs==="bn"||qs==="bnd"); }
+    else if(c==="blank"){ const x=textLine(); x.t=(x.t+" ________ ").replace(/^\s+/,""); }
+    else if(c==="stop"){ const x=textLine(); x.t=x.t.replace(/\s+$/,"")+"।"; }
+    else if(c==="qmark"){ const x=textLine(); x.t=x.t.replace(/\s+$/,"")+"?"; }
+  }
+  return L.filter(x=>x.kind!=="q"||x.t||x.mk).map(x=>{
+    if(x.kind==="sec") return "## "+x.t.replace(/\s+/g," ");
+    const body=x.kind==="opt"||x.kind==="plain"?x.t.replace(/\s+$/,""):endMark(x.t||"");
+    return ((x.label?x.label+" ":"")+body).trim()+(x.mk?" || "+x.mk:""); });
 }
+function dictPreview(){ const box=$("dictLive"); if(!box) return; let L=null; try{ L=buildDict(); }catch{}
+  box.hidden=!L||!L.length; if(L) box.textContent=L.map(x=>x.replace(/^##\s+/,"").replace(/\s*\|\|\s*(.+)$/,"      [$1]")).join("\n"); }
+$("dict").addEventListener("input",dictPreview);
+["qStyle","oStyle","sStyle","qStart"].forEach(id=>$(id).addEventListener("change",dictPreview));
+function dictIns(w){ const t=$("dict"); const a=t.selectionStart??t.value.length, b=t.selectionEnd??a; const pre=t.value.slice(0,a), sp=pre&&!/\s$/.test(pre)?" ":"";
+  t.value=pre+sp+w+" "+t.value.slice(b); const pos=(pre+sp+w+" ").length; try{t.focus();t.setSelectionRange(pos,pos);}catch{} dictPreview(); }
+["dqNew","dqSub","dqOpt","dqMk"].forEach(id=>{ const b=$(id); b.addEventListener("pointerdown",e=>e.preventDefault()); b.addEventListener("mousedown",e=>e.preventDefault()); });
+$("dqNew").onclick=()=>dictIns("\nনতুন প্রশ্ন"); $("dqSub").onclick=()=>dictIns("ছোট প্রশ্ন"); $("dqOpt").onclick=()=>dictIns("অপশন");
+$("dqMk").onclick=()=>{ let v=$("dqMkV").value.trim().replace(/[০-৯]/g,d=>"০১২৩৪৫৬৭৮৯".indexOf(d)).replace(/\s*[×xX*]\s*/," গুণ "); if(!/^\d+( গুণ \d+)?$/.test(v)){ setStatus("নম্বর লিখুন, যেমন 2 বা 1x5",true); return; } dictIns("নম্বর "+v); $("dqMkV").value=""; };
 $("dictGo").onclick=()=>{
   const L=buildDict(); if(!L||!L.length){setStatus("আগে প্রশ্নগুলো বলুন বা লিখুন।",true);return;}
   dictLines=L; $("dictPlanText").textContent=L.map(x=>x.replace(/^##\s+/,"")).join("\n"); $("dictPlan").hidden=false; $("dictAI").hidden=!aiAvailable();
@@ -22979,7 +23010,7 @@ function micStart(kind){
 }
 function micShow(){
   const m=mic; if(!m) return; const txt=(m.final+(m.interim?(m.final?" ":"")+m.interim:"")).replace(/\s+/g," ").trim();
-  if(m.kind==="dict"){ const t=$("dict"); const sep=m.before&&!/\s$/.test(m.before)&&txt?" ":""; t.value=m.before+sep+txt+m.after; const pos=(m.before+sep+txt).length; try{t.setSelectionRange(pos,pos);}catch{} }
+  if(m.kind==="dict"){ const t=$("dict"); const sep=m.before&&!/\s$/.test(m.before)&&txt?" ":""; t.value=m.before+sep+txt+m.after; const pos=(m.before+sep+txt).length; try{t.setSelectionRange(pos,pos);}catch{} if(typeof dictPreview==="function") dictPreview(); }
   else if(m.node){ m.node.nodeValue=txt?m.lead+txt:""; refitSoon(); }
 }
 const D2B_FIX={"\u0935":"\u09AC","\u090D":"\u098F","\u090E":"\u098F","\u0911":"\u0985","\u0912":"\u0993","\u0929":"\u09A8","\u0931":"\u09B0","\u0933":"\u09B2","\u0934":"\u09B2","\u0945":"\u09C7","\u0946":"\u09C7","\u0949":"\u09CB","\u094A":"\u09CB","\u0950":"\u0993\u0981","\u0958":"\u0995\u09BC","\u0959":"\u0996\u09BC","\u095A":"\u0997\u09BC","\u095B":"\u099C\u09BC","\u095E":"\u09AB\u09BC","\u0964":"\u0964","\u0965":"\u0965"};
@@ -23122,7 +23153,8 @@ $("qbMkV").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault
 { try{ const f=JSON.parse(localStorage.getItem("qfmt")||"null"); if(f){ if(f.q)$("qfMain").value=f.q; if(f.s)$("qfSub").value=f.s; if(f.o)$("qfOpt").value=f.o; } }catch{} }
 ["qfMain","qfSub","qfOpt"].forEach(id=>$(id).onchange=()=>{ try{localStorage.setItem("qfmt",JSON.stringify(QF()));}catch{} });
 $("qbHelp").onclick=()=>{ $("qbHelpBox").hidden=!$("qbHelpBox").hidden; };
-window.dictFinal=dictFinal;
+window.dictFinal=dictFinal; window.splitCmds=splitCmds;
+window.marksTextFor=(v,bnDig)=>{ const D=bnDig?bn:(x=>String(x)); const m=String(v).match(/^(\d+)\s*[×x*]\s*(\d+)$/); return m?`${D(m[1])}×${D(m[2])}=${D(m[1]*m[2])}`:D(v); };
 })();
 /* ---------- bold, italic and letter size for chosen words (or the whole line) ---------- */
 const FSZ={"-1":0.85,"0":1,"1":1.2,"2":1.4,"3":1.7};
