@@ -116,6 +116,11 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 .doc .wlines{margin:.15em 0 .45em}
 .doc .wlines div{border-bottom:1px solid #666}
 .doc table.tbl td{min-width:2.5em;height:1.5em}
+#doc td.cur{position:relative}
+.tgrip{display:none}
+#doc td.cur > .tgrip{display:block;position:absolute;right:-12px;bottom:-12px;width:22px;height:22px;border-radius:50%;background:#1f6f5c;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);cursor:nwse-resize;touch-action:none;z-index:6;box-sizing:border-box}
+#doc td.cur > .tgrip::after{content:"";position:absolute;inset:-12px}
+@media print{.tgrip{display:none!important}}
 #doc table.tbl td.cur{outline:2px solid #9bcab9;outline-offset:-2px}
 .doc .bad{color:#b3261e;font-family:ui-monospace,monospace;font-size:.85em}
 #doc .m,#doc .eq,#doc figure.fi{cursor:pointer}
@@ -136,10 +141,10 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 .pvbox{position:relative;overflow:hidden}
 .psheet{background:#fff;display:flex;transform-origin:0 0;position:absolute;left:0;top:0;box-shadow:0 1px 3px rgba(0,0,0,.15),0 6px 18px rgba(0,0,0,.08)}
 .psheet.fold .ppage+.ppage{border-left:1px dashed #d0d0d0}
-.psheet.cut .ppage+.ppage{border-left:1px dashed #8a8a8a}
+.psheet.cut .ppage+.ppage{border-left:1.2px dashed #444;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .psheet.vsplit{flex-direction:column}
 .psheet.vsplit.fold .ppage+.ppage{border-left:0;border-top:1px dashed #d0d0d0}
-.psheet.vsplit.cut .ppage+.ppage{border-left:0;border-top:1px dashed #8a8a8a}
+.psheet.vsplit.cut .ppage+.ppage{border-left:0;border-top:1.2px dashed #444}
 .ppage{box-sizing:border-box;overflow:hidden;flex:none;position:relative}
 .ppage .num{position:absolute;bottom:6px;left:0;right:0;text-align:center;font:11px var(--ui);color:#aaa}
 .ppage .pno{position:absolute;z-index:2;color:#000;line-height:1;white-space:nowrap;font-weight:500;-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -464,7 +469,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৩ নভেম্বর বিকেল (বক্স টেনে ছোট-বড়)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৩ নভেম্বর বিকেল ২ (টেবিলের ঘর টেনে বড়, মাঝখানে দাগ)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -655,7 +660,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
           </div>
           <span class="small" id="margNote"></span>
         </div>
-        <label class="check" id="cutWrap" style="margin-top:8px" hidden><input type="checkbox" id="cutLine" checked> <span>মাঝখানে কাটার হালকা দাগ ছাপো</span></label>
+        <label class="check" id="cutWrap" style="margin-top:8px" hidden><input type="checkbox" id="cutLine" checked> <span>দুই ভাগের মাঝখানে দাগ ছাপো (ভাঁজ বা কাটার জন্য)</span></label>
         <div class="row" style="margin-top:8px">
           <label for="pages" class="small">কত পাতায়</label>
           <select id="pages"></select>
@@ -882,6 +887,11 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
             <button class="btn" id="colAdd">＋ ডানে কলাম</button><button class="btn" id="colDel">－ এই কলাম</button>
             <button class="btn" id="tblDel">টেবিল মুছুন</button><button class="btn" id="tblDone">ঠিক আছে</button>
           </div>
+          <div class="row"><span class="small">মাপ:</span>
+            <button class="btn" id="tcW1">এই কলাম চওড়া ＋</button><button class="btn" id="tcW0">চওড়া －</button>
+            <button class="btn" id="trH1">এই সারি উঁচু ＋</button><button class="btn" id="trH0">উঁচু －</button>
+          </div>
+          <span class="small">ঘরের ডান-নিচের সবুজ গোল বোতামটা আঙুলে টেনেও কলাম চওড়া আর সারি উঁচু করা যায়।</span>
         </div>
         <div class="edtools" style="margin-bottom:8px">
           <button class="btn" id="insImg">🖼 যেখানে ট্যাপ করেছেন, তার নিচে ছবি বসান</button>
@@ -22129,8 +22139,8 @@ $("tblOk").onclick=()=>{
   const nodes=insertBlockBelow(h); if(nodes) setStatus("টেবিল বসানো হল। ঘরে ট্যাপ করে লিখুন। সারি বা কলাম বাড়াতে-কমাতে ঘরে ট্যাপ করুন।");
 };
 let tblCell=null;
-function tblMark(td){document.querySelectorAll("#doc td.cur").forEach(x=>x.classList.remove("cur"));tblCell=td;if(td){td.classList.add("cur");$("tblTools").hidden=false;$("tblNew").hidden=true;}else $("tblTools").hidden=true;}
-$("doc").addEventListener("pointerdown",e=>{const td=e.target.closest&&e.target.closest("#doc table.tbl td");tblMark(td||null);});
+function tblMark(td){document.querySelectorAll("#doc td.cur").forEach(x=>x.classList.remove("cur"));document.querySelectorAll("#doc .tgrip").forEach(g=>{ if(!td||!td.contains(g)) g.remove(); });tblCell=td;if(td&&typeof tcGrip==="function"&&!td.querySelector(".tgrip")) setTimeout(tcGrip,0);if(td){td.classList.add("cur");$("tblTools").hidden=false;$("tblNew").hidden=true;}else $("tblTools").hidden=true;}
+$("doc").addEventListener("pointerdown",e=>{ if(e.target.closest&&e.target.closest(".tgrip")) return; const td=e.target.closest&&e.target.closest("#doc table.tbl td");tblMark(td||null);});
 function tblDo(f){if(!tblCell||!tblCell.isConnected){tblMark(null);return;}snapshot();f(tblCell.closest("table"),tblCell.parentElement,tblCell.cellIndex);hasExample=false;refit();}
 $("rowAdd").onclick=()=>tblDo((t,tr)=>{const n=document.createElement("tr");for(let i=0;i<tr.cells.length;i++){const d=document.createElement("td");d.innerHTML="<br>";n.appendChild(d);}tr.after(n);});
 $("rowDel").onclick=()=>tblDo((t,tr)=>{if(t.rows.length>1){tr.remove();tblMark(null);}else setStatus("শেষ সারিটা মোছা যাবে না, পুরো টেবিল মুছতে \"টেবিল মুছুন\" চাপুন।",true);});
@@ -22138,6 +22148,28 @@ $("colAdd").onclick=()=>tblDo((t,tr,i)=>{[...t.rows].forEach(r=>{const d=r.inser
 $("colDel").onclick=()=>tblDo((t,tr,i)=>{if(tr.cells.length>1){[...t.rows].forEach(r=>{if(r.cells[i])r.deleteCell(i);});tblMark(null);}else setStatus("শেষ কলামটা মোছা যাবে না।",true);});
 $("tblDel").onclick=()=>tblDo(t=>{t.remove();tblMark(null);});
 $("tblDone").onclick=()=>tblMark(null);
+/* table sizes: width of a column, height of a row (em, so they print the same) */
+function tcEm(td){ return parseFloat(getComputedStyle(td).fontSize)||16; }
+function tcSetW(t,i,w){ w=Math.max(1.5,Math.min(40,w)); [...t.rows].forEach(r=>{ const c=r.cells[i]; if(c){ c.style.width=w.toFixed(2)+"em"; c.style.minWidth=w.toFixed(2)+"em"; } }); }
+function trSetH(tr,h){ h=Math.max(1.2,Math.min(25,h)); [...tr.cells].forEach(c=>c.style.height=h.toFixed(2)+"em"); }
+function tcStep(dw,dh){ if(!tblCell||!tblCell.isConnected) return; const td=tblCell, t=td.closest("table"), fs=tcEm(td); snapshot();
+  if(dw) tcSetW(t,td.cellIndex,(td.offsetWidth/fs)*(dw>0?1.25:0.8));
+  if(dh) trSetH(td.parentElement,(td.offsetHeight/fs)*(dh>0?1.3:1/1.3));
+  hasExample=false; refit(); tcGrip(); }
+["tcW1","tcW0","trH1","trH0"].forEach(id=>{ const b=$(id); b.addEventListener("pointerdown",e=>e.preventDefault()); b.addEventListener("mousedown",e=>e.preventDefault()); });
+$("tcW1").onclick=()=>tcStep(1,0); $("tcW0").onclick=()=>tcStep(-1,0); $("trH1").onclick=()=>tcStep(0,1); $("trH0").onclick=()=>tcStep(0,-1);
+function tcGrip(){
+  document.querySelectorAll("#doc .tgrip").forEach(g=>g.remove());
+  const td=tblCell; if(!td||!td.isConnected) return;
+  const g=document.createElement("span"); g.className="tgrip"; g.contentEditable="false"; g.setAttribute("aria-label","টেনে ঘর ছোট-বড় করুন"); td.appendChild(g);
+  g.addEventListener("click",e=>{ e.preventDefault(); e.stopPropagation(); });
+  g.addEventListener("pointerdown",e=>{ e.preventDefault(); e.stopPropagation(); snapshot(); try{g.setPointerCapture(e.pointerId);}catch{}
+    const t=td.closest("table"), i=td.cellIndex, fs=tcEm(td), sc=(td.getBoundingClientRect().width||1)/(td.offsetWidth||1), em=fs*(sc||1);
+    const w0=td.offsetWidth/fs, h0=td.offsetHeight/fs, x0=e.clientX, y0=e.clientY;
+    const mv=ev=>{ tcSetW(t,i,w0+(ev.clientX-x0)/em); trSetH(td.parentElement,h0+(ev.clientY-y0)/em); refitSoon(); };
+    const up=()=>{ g.removeEventListener("pointermove",mv); g.removeEventListener("pointerup",up); g.removeEventListener("pointercancel",up); hasExample=false; refit(); };
+    g.addEventListener("pointermove",mv); g.addEventListener("pointerup",up); g.addEventListener("pointercancel",up); });
+}
 $("doc").addEventListener("pointerdown",e=>{const b=topBlock(e.target);if(b)lastBlock=b;});
 
 function paintAll(el){el.querySelectorAll("[data-tex]").forEach(paintMath);}
@@ -22716,7 +22748,7 @@ function pageOptions(){
     :mode==="pdup"?"খাড়া A4 কাগজ, ওপরে-নিচে দুই ভাগে একই প্রশ্ন। মাঝখান থেকে আড়াআড়ি কাটলে দুটো প্রশ্নপত্র।"
     :mode==="land1"?"আড়াআড়ি A4, পুরো কাগজ জুড়ে একটা পাতা, লম্বা লাইনে লেখা।"
     :"খাড়া A4 পাতা। মাথায় Class, Sub আর Full Marks এক লাইনে, নিচে ডবল দাগ।";
-  $("cutWrap").hidden=!(mode==="dup"||mode==="pdup"); $("gapWrap").hidden=!twoUp(); showGap(); if(typeof showMarg==="function") showMarg();
+  $("cutWrap").hidden=!twoUp(); $("gapWrap").hidden=!twoUp(); showGap(); if(typeof showMarg==="function") showMarg();
   $("exportnote").textContent=(mode==="dup"||mode==="pdup")
     ?"ছাপার পর মাঝখান থেকে কাটুন। ২ পাতা হলে দুপিঠে ছাপবেন, দুই ভাগে একই প্রশ্ন বলে কোন দিকে উল্টাবেন তা নিয়ে ভাবতে হবে না।"
     :mode==="booklet"
@@ -22888,7 +22920,7 @@ function buildSheets(forPrint){
   let total=pages.length; if(mode==="booklet") total=Math.max(4,Math.ceil(total/4)*4,wanted()||0);
   while(pages.length<total) pages.push([]);
   return order(total).map(side=>{
-    const sh=document.createElement("div"); sh.className="psheet"+(vsplit()?" vsplit":"")+(twoUp()&&!forPrint?" fold":"")+((mode==="dup"||mode==="pdup")&&$("cutLine").checked?" cut":"");
+    const sh=document.createElement("div"); sh.className="psheet"+(vsplit()?" vsplit":"")+(twoUp()&&!forPrint?" fold":"")+(twoUp()&&$("cutLine").checked?" cut":"");
     sh.style.width=G.sheetW+"px"; sh.style.height=G.sheetH+"px";
     side.pages.forEach((pi,j)=>{
       const pg=document.createElement("div"); pg.className="ppage";
