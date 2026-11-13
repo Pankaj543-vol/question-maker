@@ -469,7 +469,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৩ নভেম্বর সন্ধ্যা (ছবির পেছন পুরো সাদা)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৩ নভেম্বর সন্ধ্যা ২ (ছবিতে রবার)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -806,6 +806,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
         <div class="row">
           <button class="btn primary" id="fok" style="width:auto">ঠিক আছে, বন্ধ করুন</button>
           <button class="btn" id="fdel">🗑 পুরো ছবিটা মুছুন</button>
+          <button class="btn" id="ferase">🧽 মুছুন (রবার)</button>
           <button class="btn" id="fscan">◐ পেছন সাদা, লেখা কালো</button>
           <button class="btn" id="fredraw">✨ Claude দিয়ে পরিষ্কার করে আঁকুন</button>
           <button class="btn" id="forig" hidden>আসল ছবিটা ফিরিয়ে আনুন</button>
@@ -920,6 +921,17 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
     <div class="zoom"><button class="btn" id="pdfZm" aria-label="ছোট করুন">－</button><button class="btn" id="pdfZp" aria-label="বড় করুন">＋</button></div></div>
   <div class="pscroll" id="pdfPages"></div>
   <div class="pbot"><button class="btn primary" id="pdfOk">✓ ঠিক আছে, ডাউনলোড করুন</button><button class="btn" id="pdfBack">✎ ফিরে গিয়ে ঠিক করুন</button></div>
+</div>
+<div class="cropov" id="eraseOv" hidden style="z-index:80" role="dialog" aria-label="ছবির অংশ মুছুন">
+  <div class="cropbox">
+    <b style="font-size:1rem">🧽 ছবির যেখানে মুছবেন, আঙুল ঘষুন</b>
+    <div class="row" style="gap:6px">
+      <span class="small">রবারের মাপ</span><select id="erSize"><option value="0.012">সরু</option><option value="0.03" selected>মাঝারি</option><option value="0.07">মোটা</option></select>
+      <button class="btn" id="erUndo">↶ একবার ফেরান</button>
+    </div>
+    <div style="overflow:auto;max-height:68vh;text-align:center;background:#ddd;border-radius:8px;padding:6px"><canvas id="erCv" style="max-width:100%;touch-action:none;background:#fff;cursor:crosshair;display:inline-block"></canvas></div>
+    <div class="row"><button class="btn primary" id="erOk" style="width:auto">ঠিক আছে, বসান</button><button class="btn" id="erCancel">বাতিল</button></div>
+  </div>
 </div>
 <div class="cropov" id="crop" hidden>
   <div class="cropbox" role="dialog" aria-label="ছবির অংশ বাছুন">
@@ -22474,7 +22486,35 @@ $("fscan").onclick=async()=>{ if(!figEl) return; const el=figEl, img=el.querySel
     if(!el.dataset.orig) el.dataset.orig=img.src; img.onload=()=>refit(); img.src=cv.toDataURL("image/png"); $("forig").hidden=false;
     setStatus("ছবির পেছন সাদা আর লেখা কালো করা হল। আগের মতো চাইলে \"আসল ছবিটা ফিরিয়ে আনুন\"।"); }
   catch{ setStatus("এই ছবিটা বদলানো গেল না।",true); } };
-$("forig").onclick=()=>{ if(figEl&&figEl.dataset.scan&&!figEl.dataset.orig){ snapshot(); delete figEl.dataset.scan; cropFig(figEl); $("forig").hidden=true; return; }if(!figEl||!figEl.dataset.orig)return;const img=figEl.querySelector("img");img.onload=()=>refit();img.src=figEl.dataset.orig;delete figEl.dataset.orig;$("forig").hidden=true;};
+/* eraser: rub with a finger, those spots turn white */
+(function(){
+  const cv=$("erCv"), ctx=cv.getContext("2d",{willReadFrequently:true}); let fig=null, undo=[], drawing=false, last=null;
+  const rad=()=>Math.max(3,Number($("erSize").value)*Math.max(cv.width,cv.height));
+  const pt=e=>{ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height]; };
+  const dot=(a,b)=>{ ctx.strokeStyle="#fff"; ctx.fillStyle="#fff"; ctx.lineCap="round"; ctx.lineJoin="round"; ctx.lineWidth=rad()*2;
+    ctx.beginPath(); if(b){ ctx.moveTo(b[0],b[1]); ctx.lineTo(a[0],a[1]); ctx.stroke(); } else { ctx.arc(a[0],a[1],rad(),0,Math.PI*2); ctx.fill(); } };
+  cv.addEventListener("pointerdown",e=>{ e.preventDefault(); try{cv.setPointerCapture(e.pointerId);}catch{} undo.push(ctx.getImageData(0,0,cv.width,cv.height)); if(undo.length>15) undo.shift();
+    drawing=true; last=pt(e); dot(last,null); $("erUndo").disabled=false; });
+  cv.addEventListener("pointermove",e=>{ if(!drawing) return; const p=pt(e); dot(p,last); last=p; });
+  const end=()=>{ drawing=false; last=null; }; cv.addEventListener("pointerup",end); cv.addEventListener("pointercancel",end);
+  $("erUndo").onclick=()=>{ const d=undo.pop(); if(d) ctx.putImageData(d,0,0); $("erUndo").disabled=!undo.length; };
+  const close=()=>{ $("eraseOv").hidden=true; document.documentElement.style.overflow=""; fig=null; undo=[]; };
+  $("erCancel").onclick=close;
+  $("erOk").onclick=()=>{ if(!fig||!fig.isConnected){ close(); return; } const el=fig, img=el.querySelector("img"); snapshot();
+    if(!el.dataset.orig) el.dataset.orig=img.src;
+    if(el.dataset.box){ el.dataset.obox=el.dataset.box; delete el.dataset.box; } // the picture is now its own image, no longer cut from the page photo
+    img.onload=()=>refit(); img.src=cv.toDataURL("image/png"); $("forig").hidden=false;
+    ["fmore","fless","fup","fdown","fleft","fright"].forEach(id=>$(id).hidden=true);
+    close(); setStatus("মোছা হল। আগের মতো চাইলে \"আসল ছবিটা ফিরিয়ে আনুন\" চাপুন।"); };
+  $("ferase").onclick=async()=>{ if(!figEl) return; const img=figEl.querySelector("img"); if(!img||!img.src){ setStatus("এই ছবিটা এখনও তৈরি হয়নি।",true); return; }
+    try{ const src=await loadImg(img.src); const k=Math.min(1,1600/Math.max(src.naturalWidth,src.naturalHeight,1));
+      cv.width=Math.max(1,Math.round(src.naturalWidth*k)); cv.height=Math.max(1,Math.round(src.naturalHeight*k));
+      ctx.fillStyle="#fff"; ctx.fillRect(0,0,cv.width,cv.height); ctx.drawImage(src,0,0,cv.width,cv.height);
+      fig=figEl; undo=[]; $("erUndo").disabled=true; $("eraseOv").hidden=false; document.documentElement.style.overflow="hidden";
+    }catch{ setStatus("এই ছবিটা খোলা গেল না।",true); } };
+})();
+$("forig").onclick=()=>{ if(figEl&&figEl.dataset.obox){ snapshot(); figEl.dataset.box=figEl.dataset.obox; delete figEl.dataset.obox; delete figEl.dataset.orig; cropFig(figEl); $("forig").hidden=true; ["fmore","fless","fup","fdown","fleft","fright"].forEach(id=>$(id).hidden=false); return; }
+  if(figEl&&figEl.dataset.scan&&!figEl.dataset.orig){ snapshot(); delete figEl.dataset.scan; cropFig(figEl); $("forig").hidden=true; return; }if(!figEl||!figEl.dataset.orig)return;const img=figEl.querySelector("img");img.onload=()=>refit();img.src=figEl.dataset.orig;delete figEl.dataset.orig;$("forig").hidden=true;};
 
 /* ---------- Gemini drawing → picture (free) ---------- */
 const DRAW_PROMPT=`এই হাতে আঁকা ছবিটা SVG কোডে পরিষ্কার সাদা-কালো রেখাচিত্র হিসেবে আবার আঁকো।
