@@ -199,7 +199,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 .symb .sg button{min-width:40px;height:38px;padding:0 7px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--fg);font:500 1.02rem "Noto Serif Bengali","Cambria Math","STIX Two Math",serif;cursor:pointer;touch-action:manipulation}
 .symb .sg button.st{font-size:.92rem;background:var(--accent-soft);color:var(--accent);border-color:transparent}
 .symb .sg button:active{background:var(--accent);color:var(--accent-fg)}
-.doc .uln{text-decoration:underline;text-underline-offset:.15em}.doc .ovl{text-decoration:overline}.doc .uol{text-decoration:underline overline;text-underline-offset:.15em}
+.doc .uln,.doc u{text-decoration:underline;text-underline-offset:.22em;text-decoration-skip-ink:none}.doc .ovl{text-decoration:overline}.doc .uol{text-decoration:underline overline;text-underline-offset:.15em}
 /* PDF check before download */
 .pdfov{position:fixed;inset:0;z-index:80;background:rgba(10,16,14,.86);display:flex;flex-direction:column;padding:max(10px,env(safe-area-inset-top,0px)) max(10px,env(safe-area-inset-right,0px)) max(10px,env(safe-area-inset-bottom,0px)) max(10px,env(safe-area-inset-left,0px))}
 .pdfov .ptop{color:#fff;display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;justify-content:space-between;padding:4px 2px 8px}
@@ -458,7 +458,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ৮ নভেম্বর রাত ("এক নম্বর" বললেও চলে)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৩ নভেম্বর দুপুর (U আন্ডারলাইন বোতাম)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -814,7 +814,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
           <select id="lineN" aria-label="কটা দাগ"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option><option>8</option><option>10</option></select>
           <button class="btn" id="linesBtn">≡ উত্তর লেখার দাগ</button>
           <button class="btn" id="boxBtn">☐ বক্স</button>
-          <span class="fmtbar" role="group" aria-label="লেখা সাজান"><button class="btn fmt" id="fmtB" title="বোল্ড (মোটা)"><b>B</b></button><button class="btn fmt" id="fmtI" title="তেরছা (ইটালিক)"><i style="font-family:serif">I</i></button><button class="btn fmt" id="fmtUp" title="অক্ষর বড়">A<sup>+</sup></button><button class="btn fmt" id="fmtDn" title="অক্ষর ছোট">A<sup>−</sup></button><button class="btn fmt" id="fmtRst" title="মাপ সাধারণ">A</button></span>
+          <span class="fmtbar" role="group" aria-label="লেখা সাজান"><button class="btn fmt" id="fmtB" title="বোল্ড (মোটা)"><b>B</b></button><button class="btn fmt" id="fmtI" title="তেরছা (ইটালিক)"><i style="font-family:serif">I</i></button><button class="btn fmt" id="fmtU" title="নিচে দাগ (আন্ডারলাইন)"><u style="text-underline-offset:.2em">U</u></button><button class="btn fmt" id="fmtO" title="মাথায় দাগ (ওভারলাইন)"><span style="text-decoration:overline">O</span></button><button class="btn fmt" id="fmtUp" title="অক্ষর বড়">A<sup>+</sup></button><button class="btn fmt" id="fmtDn" title="অক্ষর ছোট">A<sup>−</sup></button><button class="btn fmt" id="fmtRst" title="মাপ সাধারণ">A</button></span>
           <button class="btn micbtn" id="micDoc">🎤 বলে লিখুন</button>
           <select id="micLang" aria-label="কোন ভাষায় বলবেন" title="কোন ভাষায় বলবেন"><option value="bn-IN">🎤 বাংলা</option><option value="en-IN">🎤 English</option><option value="hi-IN">🎤 हिन्दी</option><option value="ar-SA">🎤 العربية</option><option value="sa">🎤 সংস্কৃত (বাংলা হরফে)</option><option value="sa-dev">🎤 संस्कृतम् (দেবনাগরী)</option></select>
           <button class="btn" id="findBtn">🔍 খুঁজুন ও বদলান</button>
@@ -23214,8 +23214,20 @@ function fmtSize(step){ // step +1 / -1, or 0 = back to normal
   fszNorm(); fmtDone();
   setStatus(lvl===0?"অক্ষরের মাপ সাধারণ করা হল।":`অক্ষরের মাপ: ${{"-1":"ছোট","1":"বড়","2":"আরও বড়","3":"খুব বড়"}[String(lvl)]}।`);
 }
-["fmtB","fmtI","fmtUp","fmtDn","fmtRst"].forEach(id=>{ const b=$(id); b.addEventListener("pointerdown",e=>e.preventDefault()); b.addEventListener("mousedown",e=>e.preventDefault()); });
+["fmtB","fmtI","fmtU","fmtO","fmtUp","fmtDn","fmtRst"].forEach(id=>{ const b=$(id); b.addEventListener("pointerdown",e=>e.preventDefault()); b.addEventListener("mousedown",e=>e.preventDefault()); });
 $("fmtB").onclick=()=>fmtToggle("bold"); $("fmtI").onclick=()=>fmtToggle("italic");
+function fmtLine(cls){ // underline / overline the chosen words (Bengali or English), or the whole line; again = take it off
+  const r=fmtRange(); if(!r) return;
+  const at=n=>{const e=n.nodeType===1?n:n.parentElement;return e&&e.closest?e.closest("span."+cls):null;};
+  const h=at(r.startContainer);
+  if(h&&h===at(r.endContainer)&&$("doc").contains(h)){ snapshot(); while(h.firstChild) h.before(h.firstChild); h.remove(); fmtDone(); setStatus(cls==="uln"?"নিচের দাগ সরানো হল।":"মাথার দাগ সরানো হল।"); return; }
+  if(r.cloneContents().querySelector('[contenteditable="false"],p,h2,h3,table,figure')){ setStatus("এক লাইনের মধ্যের লেখা বেছে নিন (ছবি বা সূত্র বাদ দিয়ে)।",true); return; }
+  snapshot(); const sp=document.createElement("span"); sp.className=cls; sp.appendChild(r.extractContents());
+  sp.querySelectorAll("span."+cls).forEach(x=>{ while(x.firstChild) x.before(x.firstChild); x.remove(); });
+  r.insertNode(sp); try{ const rr=document.createRange(); rr.selectNodeContents(sp); getSelection().removeAllRanges(); getSelection().addRange(rr); }catch{}
+  fmtDone(); setStatus(cls==="uln"?"নিচে দাগ দেওয়া হল। আবার চাপলে উঠে যাবে।":"মাথায় দাগ দেওয়া হল। আবার চাপলে উঠে যাবে।");
+}
+$("fmtU").onclick=()=>fmtLine("uln"); $("fmtO").onclick=()=>fmtLine("ovl");
 $("fmtUp").onclick=()=>fmtSize(1); $("fmtDn").onclick=()=>fmtSize(-1); $("fmtRst").onclick=()=>fmtSize(0);
 $("eqcancel").onclick=()=>{ if(eqNew&&eqEl){eqEl.remove();refit();} closeEq(); };
 /* ---------- maths symbol board ----------
