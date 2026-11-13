@@ -469,7 +469,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৩ নভেম্বর বিকেল ২ (টেবিলের ঘর টেনে বড়, মাঝখানে দাগ)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৩ নভেম্বর সন্ধ্যা (ছবির পেছন পুরো সাদা)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -806,6 +806,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
         <div class="row">
           <button class="btn primary" id="fok" style="width:auto">ঠিক আছে, বন্ধ করুন</button>
           <button class="btn" id="fdel">🗑 পুরো ছবিটা মুছুন</button>
+          <button class="btn" id="fscan">◐ পেছন সাদা, লেখা কালো</button>
           <button class="btn" id="fredraw">✨ Claude দিয়ে পরিষ্কার করে আঁকুন</button>
           <button class="btn" id="forig" hidden>আসল ছবিটা ফিরিয়ে আনুন</button>
         </div>
@@ -925,7 +926,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
     <b style="font-size:1rem">ছবির কোন অংশ বসাবেন?</b>
     <p class="small" style="margin:0">যে অংশটা চান তার ওপর আঙুল টেনে একটা চৌকো বানান, তারপর "এই অংশ বসান"। পুরো ছবি চাইলে সোজা "পুরো ছবি বসান" চাপুন।</p>
     <div class="cropstage" id="cropStage"><img id="cropImg" alt="বাছার ছবি"><div id="cropSel" hidden></div></div>
-    <label class="check"><input type="checkbox" id="cropBW" checked> <span>সাদা-কালো, পরিষ্কার করো</span></label>
+    <label class="small" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">ছবির রং <select id="cropMode"><option value="scan" selected>পেছন পুরো সাদা, লেখা কালো (স্ক্যানের মতো)</option><option value="bw">হালকা সাদা-কালো</option><option value="color">যেমন আছে, রঙিন</option></select></label>
     <div class="row">
       <button class="btn primary" id="cropOk" style="width:auto">এই অংশ বসান</button>
       <button class="btn" id="cropAll">পুরো ছবি বসান</button>
@@ -21823,6 +21824,19 @@ function growFor(lab){ // a label pulled outside the picture gets room made for 
 }
 /* cut a drawing out of the original photo */
 const loadImg=url=>new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=no;i.src=url;});
+/* "scan" look: whatever the paper colour or shadow, the background becomes white and the writing black */
+function scanClean(cv){
+  const w=cv.width,h=cv.height; if(!w||!h) return cv; const x=cv.getContext("2d",{willReadFrequently:true});
+  const sw=Math.max(2,Math.round(w/28)), sh=Math.max(2,Math.round(h/28));
+  const s=document.createElement("canvas"); s.width=sw; s.height=sh; const sx=s.getContext("2d"); sx.filter="grayscale(1) blur(1.5px)"; sx.drawImage(cv,0,0,sw,sh);
+  const b=document.createElement("canvas"); b.width=w; b.height=h; const bx=b.getContext("2d",{willReadFrequently:true}); bx.imageSmoothingEnabled=true; bx.filter="blur(6px)"; bx.drawImage(s,0,0,w,h);
+  const d=x.getImageData(0,0,w,h), g=bx.getImageData(0,0,w,h).data, p=d.data;
+  for(let i=0;i<p.length;i+=4){
+    const v=0.299*p[i]+0.587*p[i+1]+0.114*p[i+2], bg=Math.max(40,0.299*g[i]+0.587*g[i+1]+0.114*g[i+2]);
+    let r=v/bg; r=r>=0.86?1:r<=0.5?0:(r-0.5)/0.36; r=Math.pow(r,1.6); const o=Math.round(r*255);
+    p[i]=p[i+1]=p[i+2]=o; p[i+3]=255; }
+  x.putImageData(d,0,0); return cv;
+}
 async function cropFig(el){
   const im=images.find(x=>String(x.id)===el.dataset.img), img=el.querySelector("img");
   figLayout(el);
@@ -21834,8 +21848,8 @@ async function cropFig(el){
     const sx=l/100*W, sy=t/100*H, sw=(r-l)/100*W, sh=(b-t)/100*H, k=Math.min(1,1400/sw);
     const cv=document.createElement("canvas"); cv.width=Math.round(sw*k); cv.height=Math.round(sh*k);
     const ctx=cv.getContext("2d"); ctx.fillStyle="#fff"; ctx.fillRect(0,0,cv.width,cv.height);
-    ctx.filter="grayscale(1) contrast(1.45) brightness(1.12)";
-    ctx.drawImage(src,sx,sy,sw,sh,0,0,cv.width,cv.height);
+    if(!el.dataset.scan) ctx.filter="grayscale(1) contrast(1.45) brightness(1.12)";
+    ctx.drawImage(src,sx,sy,sw,sh,0,0,cv.width,cv.height); if(el.dataset.scan) scanClean(cv);
     img.onload=()=>refit(); img.src=cv.toDataURL("image/png");
   }catch{ refit(); }
 }
@@ -22075,14 +22089,16 @@ async function cropTo(rect){
   const [l,t,r,b]=rect, sx=l*W, sy=t*H, sw=Math.max(8,(r-l)*W), sh=Math.max(8,(b-t)*H), k=Math.min(1,1400/sw);
   const cv=document.createElement("canvas");cv.width=Math.round(sw*k);cv.height=Math.round(sh*k);
   const x=cv.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,cv.width,cv.height);
-  if($("cropBW").checked) x.filter="grayscale(1) contrast(1.45) brightness(1.12)";
-  x.drawImage(src,sx,sy,sw,sh,0,0,cv.width,cv.height);
+  const md=$("cropMode").value; try{localStorage.setItem("cropMode",md);}catch{}
+  if(md==="bw") x.filter="grayscale(1) contrast(1.45) brightness(1.12)";
+  x.drawImage(src,sx,sy,sw,sh,0,0,cv.width,cv.height); if(md==="scan") scanClean(cv);
   return cv.toDataURL("image/png");
 }
 function closeCropper(v){$("crop").hidden=true;try{URL.revokeObjectURL($("cropImg").dataset.url);}catch{}const f=cropResolve;cropResolve=null;if(f)f(v);}
 $("cropOk").onclick=async()=>{if(!cropRect||cropRect[2]-cropRect[0]<0.02||cropRect[3]-cropRect[1]<0.02){$("cropAll").click();return;}closeCropper(await cropTo(cropRect));};
 $("cropAll").onclick=async()=>closeCropper(await cropTo([0,0,1,1]));
 $("cropCancel").onclick=()=>closeCropper(null);
+try{ const cm=localStorage.getItem("cropMode"); if(cm&&[...$("cropMode").options].some(o=>o.value===cm)) $("cropMode").value=cm; }catch{}
 
 /* ---------- where the person last tapped in the paper ---------- */
 let lastBlock=null;
@@ -22450,7 +22466,15 @@ Reply with ONLY the SVG code, starting with <svg and ending with </svg>.`,[blob]
   }catch(e){setStatus(e&&e.code==="not_granted"?"Claude ব্যবহারের অনুমতি দেওয়া হয়নি।":"আঁকা গেল না। আসল ছবিটাই থাকল।",true);}
   finally{btn.disabled=false;btn.textContent="✨ Claude দিয়ে পরিষ্কার করে আঁকুন";}
 };
-$("forig").onclick=()=>{if(!figEl||!figEl.dataset.orig)return;const img=figEl.querySelector("img");img.onload=()=>refit();img.src=figEl.dataset.orig;delete figEl.dataset.orig;$("forig").hidden=true;};
+$("fscan").onclick=async()=>{ if(!figEl) return; const el=figEl, img=el.querySelector("img"); if(!img||!img.src) return;
+  snapshot();
+  if(el.dataset.box){ el.dataset.scan="1"; await cropFig(el); setStatus("ছবির পেছন সাদা আর লেখা কালো করা হল।"); return; }
+  try{ const src=await loadImg(img.src); const k=Math.min(1,1600/Math.max(src.naturalWidth,1)); const cv=document.createElement("canvas"); cv.width=Math.round(src.naturalWidth*k); cv.height=Math.round(src.naturalHeight*k);
+    const x=cv.getContext("2d"); x.fillStyle="#fff"; x.fillRect(0,0,cv.width,cv.height); x.drawImage(src,0,0,cv.width,cv.height); scanClean(cv);
+    if(!el.dataset.orig) el.dataset.orig=img.src; img.onload=()=>refit(); img.src=cv.toDataURL("image/png"); $("forig").hidden=false;
+    setStatus("ছবির পেছন সাদা আর লেখা কালো করা হল। আগের মতো চাইলে \"আসল ছবিটা ফিরিয়ে আনুন\"।"); }
+  catch{ setStatus("এই ছবিটা বদলানো গেল না।",true); } };
+$("forig").onclick=()=>{ if(figEl&&figEl.dataset.scan&&!figEl.dataset.orig){ snapshot(); delete figEl.dataset.scan; cropFig(figEl); $("forig").hidden=true; return; }if(!figEl||!figEl.dataset.orig)return;const img=figEl.querySelector("img");img.onload=()=>refit();img.src=figEl.dataset.orig;delete figEl.dataset.orig;$("forig").hidden=true;};
 
 /* ---------- Gemini drawing → picture (free) ---------- */
 const DRAW_PROMPT=`এই হাতে আঁকা ছবিটা SVG কোডে পরিষ্কার সাদা-কালো রেখাচিত্র হিসেবে আবার আঁকো।
@@ -23427,7 +23451,7 @@ function symPut([label,tex,uni]){
   symShow(true); symBack=true;
 }
 $("eqdel").onclick=()=>{if(eqEl){snapshot();eqEl.remove();}closeEq();refit();};
-function openFig(el){closeEq();closeFig();closePick();figEl=el;figLayout(el);el.classList.add("sel");$("figedit").hidden=false;$("forig").hidden=!el.dataset.orig;keepAbovePanel(el,$("figedit"));
+function openFig(el){closeEq();closeFig();closePick();figEl=el;figLayout(el);el.classList.add("sel");$("figedit").hidden=false;$("forig").hidden=!el.dataset.orig&&!el.dataset.scan;keepAbovePanel(el,$("figedit"));
   const crop=!!el.dataset.box;["fmore","fless","fup","fdown","fleft","fright"].forEach(id=>$(id).hidden=!crop); if(typeof figPct==="function"){figPct();figHandle();}}
 function closeFig(){if(figEl)figEl.classList.remove("sel","placing");figEl=null;document.querySelectorAll("#doc .fgrip").forEach(h=>h.remove());$("figedit").hidden=true;placing=null;labPick(null);document.body.style.paddingBottom="";}
 function figBox(f){if(!figEl)return;snapshot();const b=figEl.dataset.box.split(",").map(Number);f(b);figEl.dataset.box=b.map(v=>Math.round(Math.max(0,Math.min(100,v))*10)/10).join(",");cropFig(figEl);}
