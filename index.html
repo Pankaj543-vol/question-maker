@@ -478,7 +478,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৫ নভেম্বর সন্ধ্যা ৩ (ভাসমান লেখা)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৫ নভেম্বর রাত (Gemini-কে আঁকার ভালো নির্দেশ)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -22543,8 +22543,12 @@ const DRAW_PROMPT=`এই হাতে আঁকা ছবিটা SVG কো�
 - সব লেবেল আর লেখা হুবহু একই ভাষায় রাখো, কোনো কিছু বাদ দিও না বা যোগ করো না।
 - মাপ, আকার আর অবস্থান হাতের আঁকার মতোই রাখো।
 - সাদা পটভূমি, কালো দাগ (stroke-width 2), কোনো রং নয়। লেখার font-family "Noto Sans Bengali", sans-serif।
-- viewBox দিও।
-- শুধু SVG কোড দাও: <svg দিয়ে শুরু, </svg> দিয়ে শেষ। আগে-পরে অন্য কোনো কথা লিখো না।`;
+- viewBox দিও। আগে মনে মনে একটা ছক (grid) ধরে প্রতিটা বিন্দুর x,y ঠিক করো, তারপর আঁকো।
+- শুধু সোজা রেখা (line, polyline, path-এ M/H/V/L), বৃত্ত আর text ব্যবহার করো। যে তারগুলো জোড়া, তাদের শেষবিন্দু হুবহু একই x,y-তে রাখো, যাতে কোনো ফাঁক বা বাড়তি দাগ না থাকে। জোড়ের জায়গায় ছোট কালো বিন্দু দাও।
+- বর্তনী হলে: রোধ = আঁকাবাঁকা (zigzag) polyline, কোষ/ব্যাটারি = একটা লম্বা আর একটা ছোট সমান্তরাল দাগ, সুইচ, অ্যামিটার/ভোল্টমিটার = বৃত্তের ভেতরে A/V। কোন রোধ শ্রেণি আর কোনটা সমান্তরাল সমবায়ে, ছবির মতো হুবহু রাখো।
+- লেখা যেন কোনো দাগের ওপর না পড়ে, দাগ থেকে একটু দূরে রাখো।
+- আঁকা শেষে নিজে মিলিয়ে দেখো: সব অংশ আছে কি, সব জোড় ঠিক কি।
+- পুরো SVG কোডটা একটা কোড-বক্সে (\`\`\`svg … \`\`\`) দাও: <svg দিয়ে শুরু, </svg> দিয়ে শেষ। আগে-পরে অন্য কোনো কথা লিখো না।`;
 $("drawPromptText").textContent=DRAW_PROMPT;
 $("copyDraw").onclick=async()=>{try{await navigator.clipboard.writeText(DRAW_PROMPT);setStatus("ছবি আঁকার নির্দেশ কপি হয়েছে। Gemini-তে হাতে আঁকা ছবি দিয়ে পেস্ট করুন।");}
   catch{const r=document.createRange();r.selectNodeContents($("drawPromptText"));const sl=getSelection();sl.removeAllRanges();sl.addRange(r);setStatus("নির্দেশটা সিলেক্ট করা আছে, কপি করে নিন।",true);}};
