@@ -89,6 +89,11 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 .eqfields{display:flex;flex-wrap:wrap;gap:6px 10px}
 .eqf{display:flex;flex-direction:column;gap:2px;font-size:.72rem;color:var(--muted)}
 .eqf input{font:inherit;font-size:1rem;color:var(--fg);padding:6px 8px;border:1px solid var(--line);border-radius:7px;background:var(--bg);min-width:3em;max-width:70vw}
+.doc .hasflt{position:relative}
+.doc .flt{position:absolute;white-space:nowrap;line-height:1.1;text-indent:0;z-index:3;cursor:move;touch-action:none;user-select:none;-webkit-user-select:none}
+#doc .flt{outline:1px dashed rgba(31,111,92,.45);outline-offset:1px}
+#doc .flt.on{outline:2px solid #1f6f5c;background:rgba(31,111,92,.12)}
+@media print{.doc .flt{outline:none!important;background:none!important}}
 .doc .mk{float:right;font-weight:700;margin-left:1em;text-indent:0}
 .qbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 6px}
 .qbar .qbmk{display:inline-flex;gap:4px}
@@ -473,7 +478,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৫ নভেম্বর সন্ধ্যা ২ (সূত্র সহজে বদলান)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৫ নভেম্বর সন্ধ্যা ৩ (ভাসমান লেখা)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -817,6 +822,12 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
           <button class="btn" id="forig" hidden>আসল ছবিটা ফিরিয়ে আনুন</button>
         </div>
       </div>
+      <div class="eqedit sheetbar" id="fltTools" hidden>
+        <b style="font-size:.92rem">ভাসমান লেখা</b>
+        <span class="small">আঙুলে টেনে সংখ্যা বা শব্দের ওপরে, নিচে বা পাশে রাখুন। যে লাইনে রাখবেন, তার সঙ্গেই থাকবে।</span>
+        <input class="libin" id="fltText" autocomplete="off" aria-label="ভাসমান লেখা বদলান">
+        <div class="row"><button class="btn" id="fltBig">বড়</button><button class="btn" id="fltSmall">ছোট</button><button class="btn" id="fltDel">🗑 মুছুন</button><button class="btn primary" id="fltDone" style="width:auto">ঠিক আছে</button></div>
+      </div>
       <div class="eqedit sheetbar" id="pickTools" hidden>
         <b id="pickName" style="font-size:.92rem"></b>
         <div class="row" id="pickLen" hidden><span class="small">মাপ:</span><button class="btn" data-len="s">ছোট</button><button class="btn" data-len="m">মাঝারি</button><button class="btn" data-len="l">লম্বা</button></div>
@@ -834,7 +845,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
           <select id="lineN" aria-label="কটা দাগ"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option><option>8</option><option>10</option></select>
           <button class="btn" id="linesBtn">≡ উত্তর লেখার দাগ</button>
           <button class="btn" id="boxBtn">☐ বক্স</button>
-          <span class="fmtbar" role="group" aria-label="লেখা সাজান"><button class="btn fmt" id="fmtB" title="বোল্ড (মোটা)"><b>B</b></button><button class="btn fmt" id="fmtI" title="তেরছা (ইটালিক)"><i style="font-family:serif">I</i></button><button class="btn fmt" id="fmtU" title="নিচে দাগ (আন্ডারলাইন)"><u style="text-underline-offset:.2em">U</u></button><button class="btn fmt" id="fmtO" title="মাথায় দাগ (ওভারলাইন)"><span style="text-decoration:overline">O</span></button><button class="btn fmt" id="fmtUp" title="অক্ষর বড়">A<sup>+</sup></button><button class="btn fmt" id="fmtDn" title="অক্ষর ছোট">A<sup>−</sup></button><button class="btn fmt" id="fmtRst" title="মাপ সাধারণ">A</button></span>
+          <span class="fmtbar" role="group" aria-label="লেখা সাজান"><button class="btn fmt" id="fmtB" title="বোল্ড (মোটা)"><b>B</b></button><button class="btn fmt" id="fmtI" title="তেরছা (ইটালিক)"><i style="font-family:serif">I</i></button><button class="btn fmt" id="fmtU" title="নিচে দাগ (আন্ডারলাইন)"><u style="text-underline-offset:.2em">U</u></button><button class="btn fmt" id="fmtO" title="মাথায় দাগ (ওভারলাইন)"><span style="text-decoration:overline">O</span></button><button class="btn fmt" id="fltBtn" title="বাছা লেখা ভাসিয়ে রাখুন, টেনে যেখানে খুশি বসান">⤧ ভাসান</button><button class="btn fmt" id="fmtUp" title="অক্ষর বড়">A<sup>+</sup></button><button class="btn fmt" id="fmtDn" title="অক্ষর ছোট">A<sup>−</sup></button><button class="btn fmt" id="fmtRst" title="মাপ সাধারণ">A</button></span>
           <button class="btn micbtn" id="micDoc">🎤 বলে লিখুন</button>
           <select id="micLang" aria-label="কোন ভাষায় বলবেন" title="কোন ভাষায় বলবেন"><option value="bn-IN">🎤 বাংলা</option><option value="en-IN">🎤 English</option><option value="hi-IN">🎤 हिन्दी</option><option value="ar-SA">🎤 العربية</option><option value="sa">🎤 সংস্কৃত (বাংলা হরফে)</option><option value="sa-dev">🎤 संस्कृतम् (দেবনাগরী)</option></select>
           <button class="btn" id="findBtn">🔍 খুঁজুন ও বদলান</button>
@@ -23316,6 +23327,62 @@ $("qbHelp").onclick=()=>{ $("qbHelpBox").hidden=!$("qbHelpBox").hidden; };
 window.dictFinal=dictFinal; window.splitCmds=splitCmds;
 window.marksTextFor=(v,bnDig)=>{ const D=bnDig?bn:(x=>String(x)); const m=String(v).match(/^(\d+)\s*[×x*]\s*(\d+)$/); return m?`${D(m[1])}×${D(m[2])}=${D(m[1]*m[2])}`:D(v); };
 })();
+/* ---------- floating text: a piece of text that sits anywhere (over a number, under a word…) and stays there ---------- */
+(function(){
+  let cur=null;
+  const doc=()=>$("doc");
+  const emPx=b=>{ const fs=parseFloat(getComputedStyle(b).fontSize)||16; const sc=(b.getBoundingClientRect().width||1)/(b.offsetWidth||1); return fs*(sc||1); };
+  function place(el,blk,cx,cy){ // put el (top-left at screen cx,cy) into block blk
+    if(el.parentElement!==blk){ const old=el.parentElement; blk.appendChild(el); if(old&&!old.querySelector(".flt")) old.classList.remove("hasflt"); }
+    blk.classList.add("hasflt");
+    const r=blk.getBoundingClientRect(), em=emPx(blk);
+    el.dataset.x=((cx-r.left)/em).toFixed(2); el.dataset.y=((cy-r.top)/em).toFixed(2); style(el); }
+  function style(el){ el.style.left=(Number(el.dataset.x)||0)+"em"; el.style.top=(Number(el.dataset.y)||0)+"em"; el.style.fontSize=(Number(el.dataset.s)||1)+"em"; }
+  function select(el){ document.querySelectorAll("#doc .flt.on").forEach(x=>x.classList.remove("on")); cur=el;
+    if(!el){ if(!$("fltTools").hidden){ $("fltTools").hidden=true; if(!figEl&&!pickEl) document.body.style.paddingBottom=""; } return; } el.classList.add("on"); $("fltText").value=el.textContent; const was=$("fltTools").hidden; $("fltTools").hidden=false; if(was&&typeof keepAbovePanel==="function") keepAbovePanel(el,$("fltTools")); }
+  window.fltClose=()=>select(null);
+  $("fltBtn").addEventListener("pointerdown",e=>e.preventDefault()); $("fltBtn").addEventListener("mousedown",e=>e.preventDefault());
+  $("fltBtn").onclick=()=>{
+    if(needOwnPaper()) return;
+    const r=lastRange&&!lastRange.collapsed&&doc().contains(lastRange.commonAncestorContainer)?lastRange.cloneRange():null;
+    const txt=r?r.toString().replace(/​/g,"").trim():"";
+    if(!txt){ setStatus("আগে প্রশ্নপত্রে যে লেখাটা ভাসাতে চান, সেটা আঙুল চেপে টেনে বেছে নিন।",true); return; }
+    if(r.cloneContents().querySelector('[contenteditable="false"],p,h2,h3,table,figure')){ setStatus("এক লাইনের মধ্যের সাধারণ লেখা বেছে নিন (সূত্র বা ছবি বাদ দিয়ে)।",true); return; }
+    const blk=topBlock(r.startContainer); if(!blk||blk.classList.contains("hdr")){ setStatus("প্রশ্নের লেখা বেছে নিন।",true); return; }
+    const rect=r.getBoundingClientRect(); snapshot();
+    r.deleteContents();
+    const el=document.createElement("span"); el.className="flt"; el.contentEditable="false"; el.textContent=txt; el.dataset.s="1";
+    blk.appendChild(el); place(el,blk,rect.left,rect.top-rect.height*0.9); // starts just above where it was
+    hasExample=false; refit(); select(el);
+    setStatus("লেখাটা এখন ভাসমান। আঙুলে টেনে যেখানে খুশি রাখুন, সেখানেই থাকবে।");
+  };
+  // drag
+  let drag=null;
+  doc().addEventListener("pointerdown",e=>{ const el=e.target.closest&&e.target.closest("#doc .flt"); if(!el) return;
+    e.preventDefault(); e.stopPropagation(); try{el.setPointerCapture(e.pointerId);}catch{}
+    const r=el.getBoundingClientRect(); drag={el,x0:e.clientX,y0:e.clientY,dx:e.clientX-r.left,dy:e.clientY-r.top,moved:false}; },true);
+  doc().addEventListener("pointermove",e=>{ if(!drag) return; const d=drag;
+    if(!d.moved&&Math.hypot(e.clientX-d.x0,e.clientY-d.y0)<5) return;
+    if(!d.moved){ d.moved=true; snapshot(); }
+    const blk=d.el.parentElement, r=blk.getBoundingClientRect(), em=emPx(blk);
+    d.el.style.left=((e.clientX-d.dx-r.left)/em)+"em"; d.el.style.top=((e.clientY-d.dy-r.top)/em)+"em"; },true);
+  const up=e=>{ if(!drag) return; const d=drag; drag=null;
+    if(!d.moved){ select(d.el); return; }
+    const r=d.el.getBoundingClientRect(); d.el.style.pointerEvents="none";
+    let under=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2); d.el.style.pointerEvents="";
+    let blk=under&&doc().contains(under)?topBlock(under):null; if(!blk||blk.classList.contains("hdr")) blk=d.el.parentElement;
+    place(d.el,blk,r.left,r.top); hasExample=false; refit(); select(d.el); };
+  doc().addEventListener("pointerup",up,true); doc().addEventListener("pointercancel",up,true);
+  doc().addEventListener("click",e=>{ if(e.target.closest&&e.target.closest("#doc .flt")){ e.preventDefault(); e.stopPropagation(); } else if(cur&&!e.target.closest("#fltTools")) select(null); },true);
+  // tools
+  ["fltBig","fltSmall","fltDel","fltDone"].forEach(id=>{ $(id).addEventListener("pointerdown",e=>e.preventDefault()); $(id).addEventListener("mousedown",e=>e.preventDefault()); });
+  $("fltText").addEventListener("input",()=>{ if(cur){ cur.textContent=$("fltText").value||"…"; refitSoon(); } });
+  $("fltText").addEventListener("focus",()=>snapshot());
+  $("fltBig").onclick=()=>{ if(!cur) return; snapshot(); cur.dataset.s=Math.min(3,(Number(cur.dataset.s)||1)*1.2).toFixed(2); style(cur); refitSoon(); };
+  $("fltSmall").onclick=()=>{ if(!cur) return; snapshot(); cur.dataset.s=Math.max(0.4,(Number(cur.dataset.s)||1)/1.2).toFixed(2); style(cur); refitSoon(); };
+  $("fltDel").onclick=()=>{ if(!cur) return; snapshot(); const p=cur.parentElement; cur.remove(); if(p&&!p.querySelector(".flt")) p.classList.remove("hasflt"); select(null); refit(); setStatus("ভাসমান লেখা মোছা হল।"); };
+  $("fltDone").onclick=()=>select(null);
+})();
 /* ---------- bold, italic and letter size for chosen words (or the whole line) ---------- */
 const FSZ={"-1":0.85,"0":1,"1":1.2,"2":1.4,"3":1.7};
 const fszOf=el=>{let f=1;for(let p=el;p&&p!==$("doc");p=p.parentElement){if(p.classList&&p.classList.contains("fsz"))f*=Number(p.dataset.f)||1;}return f;};
@@ -23698,7 +23765,7 @@ async function flattenFigs(){
 function blockOf(el){
   const walk=(n,b,runs,u,o,it,sz)=>{n.childNodes.forEach(c=>{
     if(c.nodeType===3){if(c.textContent)runs.push({text:c.textContent,bold:b,ul:u,ol:o,it,sz});}
-    else if(c.nodeType!==1||c.classList.contains("mk")) return;
+    else if(c.nodeType!==1||c.classList.contains("mk")||c.classList.contains("flt")) return;
     else if(c.dataset&&c.dataset.tex!==undefined){runs.push(c.dataset.d==="1"?{eq:c.dataset.tex}:{math:c.dataset.tex});}
     else if(c.classList&&c.classList.contains("blank")) runs.push({blank:c.dataset.len||"m"});
     else if(c.classList&&c.classList.contains("box")) runs.push({box:true});
