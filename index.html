@@ -469,7 +469,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৩ নভেম্বর সন্ধ্যা ২ (ছবিতে রবার)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৫ নভেম্বর বিকেল (রসায়নের সূত্র ঠিক)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -21723,6 +21723,12 @@ document.addEventListener("paste",e=>{
 /* ---------- maths ---------- */
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const mjReady=()=>!!(window.MathJax&&MathJax.tex2svg);
+function bnMtext(node,tex){ // MathJax draws Bengali letter by letter, which breaks the joined letters (ি, ্ …): write each Bengali \text{…} as one piece
+  const words=[...String(tex).matchAll(/\\(?:text|mbox|textrm)\s*\{([^{}]*)\}/g)].map(m=>m[1]).filter(w=>/[\u0980-\u09FF]/.test(w)); if(!words.length) return;
+  let k=0; const fam=($("doc")&&$("doc").style.fontFamily)||'"Noto Serif Bengali",serif';
+  node.querySelectorAll('g[data-mml-node="mtext"]').forEach(g=>{ const ts=[...g.querySelectorAll(":scope > text")]; if(!ts.length||!/[\u0980-\u09FF]/.test(g.textContent)) return;
+    const w=words[k++]; if(w==null) return; ts[0].textContent=w; ts[0].setAttribute("font-family",fam); ts.slice(1).forEach(t=>t.remove()); });
+}
 function paintMath(el){
   const tex=el.dataset.tex, d=el.dataset.d==="1";
   if(!mjReady()){el.textContent=d?"$$"+tex+"$$":"$"+tex+"$";return;}
@@ -21730,7 +21736,7 @@ function paintMath(el){
   try{
     const node=MathJax.tex2svg(tex,{display:d});
     if(node.querySelector("[data-mjx-error]")){el.innerHTML=`<span class="bad">${esc(tex)}</span>`;el.title="এই সূত্রে ভুল আছে, ট্যাপ করে ঠিক করুন";}
-    else{el.appendChild(node);el.title="";}
+    else{el.appendChild(node);el.title="";bnMtext(node,tex);}
   }catch{el.innerHTML=`<span class="bad">${esc(tex)}</span>`;}
 }
 function mathHTML(tex,display){
@@ -21753,7 +21759,7 @@ function cellsOf(l){let t=l.trim();if(t.startsWith("|"))t=t.slice(1);if(t.endsWi
   const out=[];let cur="",inM=false;for(const ch of t){if(ch==="$")inM=!inM;if(ch==="|"&&!inM){out.push(cur.trim());cur="";}else cur+=ch;}out.push(cur.trim());return out;}
 const FIG=/^\[\s*(?:চিত্র|ছবি|figure|diagram)\s*\|\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*\|\s*([^\]]*)\]?$/i;
 const QNUM=/^(?:Q\.?\s*)?(?:\(\s*([0-9০-৯]{1,3})\s*\)|([0-9০-৯]{1,3})\s*[.।)])/; // 1. ১। 1) and (1)
-const OPT=/^(?:\(\s*(?:[a-hA-Hক-ঙ]|[ivx]{1,4})\s*\)|(?:[a-hA-H]|[ivx]{1,4})\s*\)|অথবা|Or\b|OR\b)/;
+const OPT=/^(?:\(\s*(?:[a-zA-Zক-ঙ]|[ivx]{1,4})\s*\)|(?:[a-zA-Z]|[ivx]{1,4})\s*\)|অথবা|Or\b|OR\b)/;
 const HDR=/^\[\s*HEADER\s*\|(.*)\]$/i;
 const BOXHTML='<span class="box" contenteditable="false"></span>';
 const blankHTML=len=>`<span class="blank" contenteditable="false" data-len="${len}"></span>`;
@@ -22723,7 +22729,7 @@ function bareTexLine(line){
   return line.split(/(\$\$.*?\$\$|\$[^$]+?\$|\\\(.+?\\\)|\\\[.*?\\\])/).map((p,i)=>i%2?p:barePart(p)).join("");
 }
 function barePart(p){
-  p=p.replace(/\\(%|[,;!]|[a-zA-Z]+)(?![a-zA-Z])/g,(m,c)=>TEXSYM[c]!=null?TEXSYM[c]:m);
+  p=p.replace(/\\ /g," ").replace(/\\(%|[,;!]|[a-zA-Z]+)(?![a-zA-Z])/g,(m,c)=>TEXSYM[c]!=null?TEXSYM[c]:m);
   let out="",i=0;
   const word=/[A-Za-z0-9.]/;
   const group=j=>{ // j at "{" -> index after the matching "}"
@@ -22747,6 +22753,8 @@ function barePart(p){
       s=i;e=i+1;while(e<p.length&&/[a-zA-Z]/.test(p[e]))e++;e=tail(e);
     }else if((c==="^"||(c==="_"&&/[A-Za-z]/.test(p[i-1]||"")&&/[{0-9]/.test(p[i+1]||"")))&&/[A-Za-z0-9)]/.test(p[i-1]||"")&&p[i+1]&&p[i+1]!==" "&&p[i+1]!=="_"){
       s=i;e=tail(i);
+    }else if((c==="^"||c==="_")&&!/[A-Za-z0-9)}]/.test(p[i-1]||"")&&p[i+1]&&/[{A-Za-z0-9]/.test(p[i+1])){ // numbers written before a symbol, e.g. _{27}^{60}Co, ^{238}_{92}U
+      const e2=tail(i); if(e2>i+1&&/[\^_]/.test(p.slice(i+1,e2).replace(/\{[^}]*\}/g,""))&&(p[e2]==="\\"||/[A-Z]/.test(p[e2]||""))){ s=i; e=e2; }
     }
     if(s<0){out+=c;i++;continue;}
     // take the number/letters (or a bracket) just before, e.g. 35, x, (a+b)
