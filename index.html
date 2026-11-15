@@ -469,7 +469,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৫ নভেম্বর বিকেল (রসায়নের সূত্র ঠিক)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৫ নভেম্বর সন্ধ্যা (সূত্রে বাংলা ঠিক)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -21727,7 +21727,7 @@ function bnMtext(node,tex){ // MathJax draws Bengali letter by letter, which bre
   const words=[...String(tex).matchAll(/\\(?:text|mbox|textrm)\s*\{([^{}]*)\}/g)].map(m=>m[1]).filter(w=>/[\u0980-\u09FF]/.test(w)); if(!words.length) return;
   let k=0; const fam=($("doc")&&$("doc").style.fontFamily)||'"Noto Serif Bengali",serif';
   node.querySelectorAll('g[data-mml-node="mtext"]').forEach(g=>{ const ts=[...g.querySelectorAll(":scope > text")]; if(!ts.length||!/[\u0980-\u09FF]/.test(g.textContent)) return;
-    const w=words[k++]; if(w==null) return; ts[0].textContent=w; ts[0].setAttribute("font-family",fam); ts.slice(1).forEach(t=>t.remove()); });
+    const ns=x=>String(x).replace(/\s+/g,""), gt=ns(g.textContent); let j=words.findIndex((x,i)=>x!=null&&ns(x)===gt); if(j<0) j=words.findIndex(x=>x!=null); if(j<0) return; const w=words[j]; words[j]=null; k++; ts[0].textContent=w; ts[0].setAttribute("font-family",fam); ts.slice(1).forEach(t=>t.remove()); });
 }
 function paintMath(el){
   const tex=el.dataset.tex, d=el.dataset.d==="1";
@@ -23041,7 +23041,7 @@ function closeEq(){eqNew=false;
 function previewEq(){
   const p=$("eqprev"), tex=$("eqtex").value.trim();
   if(!mjReady()){p.textContent=tex;return;}
-  p.innerHTML=""; try{p.appendChild(MathJax.tex2svg(tex||"\\square",{display:true}));}catch{p.textContent=tex;}
+  p.innerHTML=""; try{const nd=MathJax.tex2svg(tex||"\\square",{display:true}); p.appendChild(nd); bnMtext(nd,tex||"");}catch{p.textContent=tex;}
 }
 $("eqtex").addEventListener("input",previewEq);
 $("eqok").onclick=()=>{if(!eqEl)return;snapshot();const tex=$("eqtex").value.trim();if(!tex)eqEl.remove();else{eqEl.dataset.tex=tex;paintMath(eqEl);}hasExample=false;closeEq();refit();};
