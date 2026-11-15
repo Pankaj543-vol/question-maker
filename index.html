@@ -85,6 +85,10 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 .doc p.or{text-align:center;font-weight:700;margin:.08em 0}
 .doc h2{font-size:1.12em;font-weight:700;margin:.35em 0 .3em;text-align:center}
 .doc h3.sec{font-size:1em;font-weight:700;margin:.6em 0 .25em;padding-bottom:1px;border-bottom:1px solid #999}
+.eqeasy{display:flex;flex-direction:column;gap:6px;padding:8px;border:1.5px solid var(--accent);border-radius:9px;margin-bottom:6px}
+.eqfields{display:flex;flex-wrap:wrap;gap:6px 10px}
+.eqf{display:flex;flex-direction:column;gap:2px;font-size:.72rem;color:var(--muted)}
+.eqf input{font:inherit;font-size:1rem;color:var(--fg);padding:6px 8px;border:1px solid var(--line);border-radius:7px;background:var(--bg);min-width:3em;max-width:70vw}
 .doc .mk{float:right;font-weight:700;margin-left:1em;text-indent:0}
 .qbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 6px}
 .qbar .qbmk{display:inline-flex;gap:4px}
@@ -469,7 +473,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৫ নভেম্বর সন্ধ্যা (সূত্রে বাংলা ঠিক)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৫ নভেম্বর সন্ধ্যা ২ (সূত্র সহজে বদলান)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -740,6 +744,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
         <span class="pill" id="info">—</span>
       </div>
       <div class="eqedit" id="eqedit" hidden>
+        <div id="eqEasy" class="eqeasy" hidden><b style="font-size:.92rem">সহজে বদলান</b> <span class="small">(সূত্রের লেখা আর সংখ্যা, কোড ছাড়াই। বদলালেই নিচে দেখাবে।)</span><div id="eqFields" class="eqfields"></div></div>
         <label for="eqtex" class="small">সূত্রটা কোডে লেখা আছে। ভুল অক্ষর বা সংখ্যা বদলে দিন, নিচে সাথে সাথে দেখাবে।</label>
         <textarea id="eqtex" spellcheck="false"></textarea>
         <div class="eqprev" id="eqprev"></div>
@@ -23034,7 +23039,48 @@ $("tEdit").onclick=()=>showTab("edit"); $("tView").onclick=()=>showTab("view");
 
 /* ---------- formula and drawing editors ---------- */
 let eqEl=null, figEl=null;
-function openEq(el){closeEq();closeFig();eqEl=el;el.classList.add("sel");$("eqtex").value=el.dataset.tex;previewEq();$("eqedit").hidden=false;$("eqtex").focus();}
+/* ---------- formula: change words and numbers in plain boxes, no code ---------- */
+const EQ_TXT=/^(text|mathrm|textrm|mbox|textbf|mathbf|operatorname|textit|mathit|textsf)$/;
+const EQ_LAB2={frac:["ভগ্নাংশের ওপরে","ভগ্নাংশের নিচে"],dfrac:["ভগ্নাংশের ওপরে","ভগ্নাংশের নিচে"],tfrac:["ভগ্নাংশের ওপরে","ভগ্নাংশের নিচে"],
+  overset:["ওপরে","মাঝে"],underset:["নিচে","মাঝে"],stackrel:["ওপরে","মাঝে"],xrightarrow:["তীরের ওপরে"],xleftarrow:["তীরের ওপরে"],sqrt:["মূলের ভেতরে"],
+  overline:["মাথায় দাগের নিচে"],underline:["নিচে দাগের ওপরে"],vec:["ভেক্টর"],hat:["টুপির নিচে"],bar:["দাগের নিচে"]};
+function eqCloseB(s,i,o,c){ let d=0; for(let k=i;k<s.length;k++){ if(s[k]==="\\"){k++;continue;} if(s[k]===o)d++; else if(s[k]===c&&--d===0) return k+1; } return s.length; }
+function texFields(tex){
+  const P=[]; const fx=v=>{ if(!v) return; const l=P[P.length-1]; if(l&&l.t==="f") l.v+=v; else P.push({t:"f",v}); };
+  const ed=(v,lab,o={})=>P.push({t:"e",v,lab,...o});
+  const walk=(s,lab)=>{ let i=0;
+    while(i<s.length){ const c=s[i];
+      if(c==="\\"){ let j=i+1; if(/[a-zA-Z]/.test(s[j]||"")) while(j<s.length&&/[a-zA-Z]/.test(s[j])) j++; else j++;
+        const name=s.slice(i+1,j); fx(s.slice(i,j)); i=j;
+        if(/^(sqrt|xrightarrow|xleftarrow)$/.test(name)&&s[i]==="["){ const e=eqCloseB(s,i,"[","]"); fx("["); walk(s.slice(i+1,e-1),name==="sqrt"?"মূলের ঘাত":"তীরের নিচে"); fx("]"); i=e; }
+        const labs=EQ_TXT.test(name)?[lab||"লেখা"]:EQ_LAB2[name];
+        if(labs) for(const L of labs){ while(s[i]===" "){fx(" ");i++;} if(s[i]!=="{") break; const e=eqCloseB(s,i,"{","}"), inner=s.slice(i+1,e-1); fx("{");
+          if(EQ_TXT.test(name)&&!/[\\{}]/.test(inner)) ed(inner,L,{txt:true}); else walk(inner,L); fx("}"); i=e; }
+        continue; }
+      if(c==="^"||c==="_"){ fx(c); i++; const L=c==="^"?"ঘাত / ওপরে ছোট":"নিচে ছোট";
+        if(s[i]==="{"){ const e=eqCloseB(s,i,"{","}"); fx("{"); walk(s.slice(i+1,e-1),L); fx("}"); i=e; }
+        else if(s[i]&&/[A-Za-z0-9]/.test(s[i])){ ed(s[i],L,{wrap:true}); i++; }
+        continue; }
+      if(c==="{"){ const e=eqCloseB(s,i,"{","}"); fx("{"); walk(s.slice(i+1,e-1),lab); fx("}"); i=e; continue; }
+      const m=s.slice(i).match(/^[A-Za-z0-9.ঀ-৿]+/); if(m){ ed(m[0],lab||"লেখা"); i+=m[0].length; continue; }
+      fx(c); i++; } };
+  walk(String(tex),""); return P;
+}
+function texJoin(P){ return P.map(p=>{ if(p.t==="f") return p.v; let v=p.v;
+  if(!p.txt){ if(/[ঀ-৿ ]/.test(v.trim())) v="\\text{"+v+"}"; else v=v.replace(/\s+/g,""); }
+  else v=v.replace(/[{}\\]/g,"");
+  if(p.wrap&&v.length!==1) v="{"+v+"}"; return v; }).join(""); }
+let eqP=null, eqEasyBusy=false;
+function eqEasy(){
+  const box=$("eqFields"); if(!box) return; eqP=texFields($("eqtex").value);
+  const E=eqP.filter(p=>p.t==="e"); $("eqEasy").hidden=!E.length; box.innerHTML="";
+  E.forEach(p=>{ const w=document.createElement("label"); w.className="eqf";
+    const s=document.createElement("span"); s.textContent=p.lab; const inp=document.createElement("input"); inp.value=p.v; inp.autocomplete="off"; inp.spellcheck=false;
+    inp.style.width=Math.max(3,Math.min(18,[...p.v].length+2))+"em";
+    inp.addEventListener("input",()=>{ p.v=inp.value; eqEasyBusy=true; $("eqtex").value=texJoin(eqP); previewEq(); eqEasyBusy=false; });
+    w.append(s,inp); box.appendChild(w); });
+}
+function openEq(el){closeEq();closeFig();eqEl=el;el.classList.add("sel");$("eqtex").value=el.dataset.tex;previewEq();eqEasy();$("eqedit").hidden=false;if($("eqEasy").hidden)$("eqtex").focus();}
 let eqNew=false, symBack=false;
 function closeEq(){eqNew=false;
   const sb=$("symboard"); if(sb&&$("eqedit").contains(sb)){ if(symBack) symShow(false); else sb.hidden=true; } symBack=false;if(eqEl)eqEl.classList.remove("sel");eqEl=null;$("eqedit").hidden=true;}
@@ -23043,7 +23089,7 @@ function previewEq(){
   if(!mjReady()){p.textContent=tex;return;}
   p.innerHTML=""; try{const nd=MathJax.tex2svg(tex||"\\square",{display:true}); p.appendChild(nd); bnMtext(nd,tex||"");}catch{p.textContent=tex;}
 }
-$("eqtex").addEventListener("input",previewEq);
+$("eqtex").addEventListener("input",()=>{ previewEq(); if(!eqEasyBusy){ clearTimeout(window.__eqT); window.__eqT=setTimeout(eqEasy,600); } });
 $("eqok").onclick=()=>{if(!eqEl)return;snapshot();const tex=$("eqtex").value.trim();if(!tex)eqEl.remove();else{eqEl.dataset.tex=tex;paintMath(eqEl);}hasExample=false;closeEq();refit();};
 /* ---------- find and replace (like Ctrl+H in Google Docs) ---------- */
 let fHits=[], fIdx=-1;
