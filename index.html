@@ -103,6 +103,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 .doc .arw .al::after{content:"";position:absolute;right:-2px;top:-5px;border:4.5px solid transparent;border-left:8px solid currentColor;border-right:0}
 .doc .arw .al.l::after{right:auto;left:-2px;border-left:0;border-right:8px solid currentColor}
 .doc sub,.doc sup{font-size:.72em;line-height:0}
+#eraseOv .erm.on{background:var(--accent);color:#fff;border-color:var(--accent)}
 .doc .mk{float:right;font-weight:700;margin-left:1em;text-indent:0}
 .qbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 6px}
 .qbar .qbmk{display:inline-flex;gap:4px}
@@ -487,7 +488,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৬ নভেম্বর সকাল ৪ (সূত্রে কার্সর: ওপরের সবুজ বোতাম)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৬ নভেম্বর দুপুর (ছবিতে রবার, কলম আর লেখা)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -826,7 +827,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
         <div class="row">
           <button class="btn primary" id="fok" style="width:auto">ঠিক আছে, বন্ধ করুন</button>
           <button class="btn" id="fdel">🗑 পুরো ছবিটা মুছুন</button>
-          <button class="btn" id="ferase">🧽 মুছুন (রবার)</button>
+          <button class="btn" id="ferase">🧽 মুছুন / ✏ আঁকুন / 🔤 লিখুন</button>
           <button class="btn" id="fscan">◐ পেছন সাদা, লেখা কালো</button>
           <button class="btn" id="fredraw">✨ Claude দিয়ে পরিষ্কার করে আঁকুন</button>
           <button class="btn" id="forig" hidden>আসল ছবিটা ফিরিয়ে আনুন</button>
@@ -950,9 +951,13 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </div>
 <div class="cropov" id="eraseOv" hidden style="z-index:80" role="dialog" aria-label="ছবির অংশ মুছুন">
   <div class="cropbox">
-    <b style="font-size:1rem">🧽 ছবির যেখানে মুছবেন, আঙুল ঘষুন</b>
+    <b style="font-size:1rem" id="erHead">🧽 ছবির যেখানে মুছবেন, আঙুল ঘষুন</b>
+    <div class="row" role="group" aria-label="কী করবেন" style="gap:6px">
+      <button class="btn erm on" data-m="erase">🧽 রবার</button><button class="btn erm" data-m="pen">✏ কলম</button><button class="btn erm" data-m="text">🔤 লেখা</button>
+    </div>
+    <div class="row" id="erTextRow" hidden style="gap:6px"><input class="libin" id="erText" placeholder="কী লিখবেন? যেমন: 6 ওহম, A, নিউক্লিয়াস" autocomplete="off" style="flex:1;min-width:150px;width:auto"></div>
     <div class="row" style="gap:6px">
-      <span class="small">রবারের মাপ</span><select id="erSize"><option value="0.012">সরু</option><option value="0.03" selected>মাঝারি</option><option value="0.07">মোটা</option></select>
+      <span class="small" id="erSizeLab">মাপ</span><select id="erSize"><option value="0.012">সরু / ছোট</option><option value="0.03" selected>মাঝারি</option><option value="0.07">মোটা / বড়</option></select>
       <button class="btn" id="erUndo">↶ একবার ফেরান</button>
     </div>
     <div style="overflow:auto;max-height:68vh;text-align:center;background:#ddd;border-radius:8px;padding:6px"><canvas id="erCv" style="max-width:100%;touch-action:none;background:#fff;cursor:crosshair;display:inline-block"></canvas></div>
@@ -22532,12 +22537,22 @@ $("fscan").onclick=async()=>{ if(!figEl) return; const el=figEl, img=el.querySel
 /* eraser: rub with a finger, those spots turn white */
 (function(){
   const cv=$("erCv"), ctx=cv.getContext("2d",{willReadFrequently:true}); let fig=null, undo=[], drawing=false, last=null;
-  const rad=()=>Math.max(3,Number($("erSize").value)*Math.max(cv.width,cv.height));
+  let mode="erase";
+  const rad=()=>mode==="pen"?Math.max(1.2,Number($("erSize").value)*Math.max(cv.width,cv.height)*0.18):Math.max(3,Number($("erSize").value)*Math.max(cv.width,cv.height));
+  const HEAD={erase:"🧽 ছবির যেখানে মুছবেন, আঙুল ঘষুন",pen:"✏ আঙুল টেনে দাগ বা চিত্র আঁকুন",text:"🔤 ওপরে লেখাটা লিখুন, তারপর ছবির যেখানে বসাবেন সেখানে ট্যাপ করুন"};
+  document.querySelectorAll("#eraseOv .erm").forEach(b=>b.onclick=()=>{ mode=b.dataset.m; document.querySelectorAll("#eraseOv .erm").forEach(x=>x.classList.toggle("on",x===b));
+    $("erHead").textContent=HEAD[mode]; $("erTextRow").hidden=mode!=="text"; cv.style.cursor=mode==="text"?"text":"crosshair"; if(mode==="text") $("erText").focus(); });
+  const putText=p=>{ const t=$("erText").value.trim(); if(!t){ setStatus("আগে ওপরের ঘরে কী লিখবেন সেটা লিখুন।",true); return false; }
+    const px=Math.max(12,{"0.012":0.035,"0.03":0.055,"0.07":0.085}[$("erSize").value]*Math.max(cv.width,cv.height));
+    const fam=($("doc")&&$("doc").style.fontFamily)||'"Noto Serif Bengali",serif';
+    ctx.save(); ctx.fillStyle="#000"; ctx.font=`600 ${px}px ${fam}`; ctx.textBaseline="middle"; ctx.fillText(t,p[0],p[1]); ctx.restore(); return true; };
   const pt=e=>{ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height]; };
-  const dot=(a,b)=>{ ctx.strokeStyle="#fff"; ctx.fillStyle="#fff"; ctx.lineCap="round"; ctx.lineJoin="round"; ctx.lineWidth=rad()*2;
+  const dot=(a,b)=>{ const col=mode==="pen"?"#000":"#fff"; ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineCap="round"; ctx.lineJoin="round"; ctx.lineWidth=rad()*2;
     ctx.beginPath(); if(b){ ctx.moveTo(b[0],b[1]); ctx.lineTo(a[0],a[1]); ctx.stroke(); } else { ctx.arc(a[0],a[1],rad(),0,Math.PI*2); ctx.fill(); } };
   cv.addEventListener("pointerdown",e=>{ e.preventDefault(); try{cv.setPointerCapture(e.pointerId);}catch{} undo.push(ctx.getImageData(0,0,cv.width,cv.height)); if(undo.length>15) undo.shift();
-    drawing=true; last=pt(e); dot(last,null); $("erUndo").disabled=false; });
+    $("erUndo").disabled=false;
+    if(mode==="text"){ if(!putText(pt(e))) undo.pop(); $("erUndo").disabled=!undo.length; return; }
+    drawing=true; last=pt(e); dot(last,null); });
   cv.addEventListener("pointermove",e=>{ if(!drawing) return; const p=pt(e); dot(p,last); last=p; });
   const end=()=>{ drawing=false; last=null; }; cv.addEventListener("pointerup",end); cv.addEventListener("pointercancel",end);
   $("erUndo").onclick=()=>{ const d=undo.pop(); if(d) ctx.putImageData(d,0,0); $("erUndo").disabled=!undo.length; };
@@ -22553,7 +22568,7 @@ $("fscan").onclick=async()=>{ if(!figEl) return; const el=figEl, img=el.querySel
     try{ const src=await loadImg(img.src); const k=Math.min(1,1600/Math.max(src.naturalWidth,src.naturalHeight,1));
       cv.width=Math.max(1,Math.round(src.naturalWidth*k)); cv.height=Math.max(1,Math.round(src.naturalHeight*k));
       ctx.fillStyle="#fff"; ctx.fillRect(0,0,cv.width,cv.height); ctx.drawImage(src,0,0,cv.width,cv.height);
-      fig=figEl; undo=[]; $("erUndo").disabled=true; $("eraseOv").hidden=false; document.documentElement.style.overflow="hidden";
+      fig=figEl; undo=[]; $("erUndo").disabled=true; $("eraseOv").hidden=false; document.querySelector('#eraseOv .erm[data-m="erase"]').click(); document.documentElement.style.overflow="hidden";
     }catch{ setStatus("এই ছবিটা খোলা গেল না।",true); } };
 })();
 $("forig").onclick=()=>{ if(figEl&&figEl.dataset.obox){ snapshot(); figEl.dataset.box=figEl.dataset.obox; delete figEl.dataset.obox; delete figEl.dataset.orig; cropFig(figEl); $("forig").hidden=true; ["fmore","fless","fup","fdown","fleft","fright"].forEach(id=>$(id).hidden=false); return; }
