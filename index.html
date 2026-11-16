@@ -488,7 +488,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৬ নভেম্বর দুপুর (ছবিতে রবার, কলম আর লেখা)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৬ নভেম্বর দুপুর ২ (ছবিতে ট্যাপ করে সেখানেই লিখুন)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -955,12 +955,12 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
     <div class="row" role="group" aria-label="কী করবেন" style="gap:6px">
       <button class="btn erm on" data-m="erase">🧽 রবার</button><button class="btn erm" data-m="pen">✏ কলম</button><button class="btn erm" data-m="text">🔤 লেখা</button>
     </div>
-    <div class="row" id="erTextRow" hidden style="gap:6px"><input class="libin" id="erText" placeholder="কী লিখবেন? যেমন: 6 ওহম, A, নিউক্লিয়াস" autocomplete="off" style="flex:1;min-width:150px;width:auto"></div>
+    <div class="row" id="erTextRow" hidden style="gap:6px"><span class="small">ছবির যেখানে লিখবেন সেখানে ট্যাপ করুন, সেখানে কার্সর আসবে। লিখে "✓ বসান" বা Enter চাপুন।</span></div>
     <div class="row" style="gap:6px">
       <span class="small" id="erSizeLab">মাপ</span><select id="erSize"><option value="0.012">সরু / ছোট</option><option value="0.03" selected>মাঝারি</option><option value="0.07">মোটা / বড়</option></select>
       <button class="btn" id="erUndo">↶ একবার ফেরান</button>
     </div>
-    <div style="overflow:auto;max-height:68vh;text-align:center;background:#ddd;border-radius:8px;padding:6px"><canvas id="erCv" style="max-width:100%;touch-action:none;background:#fff;cursor:crosshair;display:inline-block"></canvas></div>
+    <div id="erWrap" style="position:relative;overflow:auto;max-height:68vh;text-align:center;background:#ddd;border-radius:8px;padding:6px"><span id="erIn" hidden style="position:absolute;z-index:3;display:inline-flex;gap:4px;align-items:center"><input id="erText" autocomplete="off" placeholder="লিখুন…" style="font-weight:600;color:#000;background:rgba(255,255,255,.85);border:1.5px dashed #1f6f5c;border-radius:4px;padding:0 3px;min-width:5em;outline:none"><button type="button" class="btn primary" id="erTextOk" style="padding:4px 9px;width:auto">✓ বসান</button></span><canvas id="erCv" style="max-width:100%;touch-action:none;background:#fff;cursor:crosshair;display:inline-block"></canvas></div>
     <div class="row"><button class="btn primary" id="erOk" style="width:auto">ঠিক আছে, বসান</button><button class="btn" id="erCancel">বাতিল</button></div>
   </div>
 </div>
@@ -22539,26 +22539,36 @@ $("fscan").onclick=async()=>{ if(!figEl) return; const el=figEl, img=el.querySel
   const cv=$("erCv"), ctx=cv.getContext("2d",{willReadFrequently:true}); let fig=null, undo=[], drawing=false, last=null;
   let mode="erase";
   const rad=()=>mode==="pen"?Math.max(1.2,Number($("erSize").value)*Math.max(cv.width,cv.height)*0.18):Math.max(3,Number($("erSize").value)*Math.max(cv.width,cv.height));
-  const HEAD={erase:"🧽 ছবির যেখানে মুছবেন, আঙুল ঘষুন",pen:"✏ আঙুল টেনে দাগ বা চিত্র আঁকুন",text:"🔤 ওপরে লেখাটা লিখুন, তারপর ছবির যেখানে বসাবেন সেখানে ট্যাপ করুন"};
+  const HEAD={erase:"🧽 ছবির যেখানে মুছবেন, আঙুল ঘষুন",pen:"✏ আঙুল টেনে দাগ বা চিত্র আঁকুন",text:"🔤 ছবির যেখানে লিখবেন সেখানে ট্যাপ করুন, সেখানেই কার্সর আসবে"};
   document.querySelectorAll("#eraseOv .erm").forEach(b=>b.onclick=()=>{ mode=b.dataset.m; document.querySelectorAll("#eraseOv .erm").forEach(x=>x.classList.toggle("on",x===b));
-    $("erHead").textContent=HEAD[mode]; $("erTextRow").hidden=mode!=="text"; cv.style.cursor=mode==="text"?"text":"crosshair"; if(mode==="text") $("erText").focus(); });
-  const putText=p=>{ const t=$("erText").value.trim(); if(!t){ setStatus("আগে ওপরের ঘরে কী লিখবেন সেটা লিখুন।",true); return false; }
-    const px=Math.max(12,{"0.012":0.035,"0.03":0.055,"0.07":0.085}[$("erSize").value]*Math.max(cv.width,cv.height));
+    $("erHead").textContent=HEAD[mode]; $("erTextRow").hidden=mode!=="text"; cv.style.cursor=mode==="text"?"text":"crosshair"; if(mode!=="text") textDone(); });
+  const tpx=()=>Math.max(12,{"0.012":0.035,"0.03":0.055,"0.07":0.085}[$("erSize").value]*Math.max(cv.width,cv.height));
+  let tAt=null; // where the typing box is, in picture units
+  function textAt(p){ textDone(); tAt=p; const r=cv.getBoundingClientRect(), w=$("erWrap").getBoundingClientRect(), k=r.width/cv.width;
+    const box=$("erIn"), inp=$("erText"); inp.value=""; inp.style.fontSize=(tpx()*k)+"px"; inp.style.fontFamily=($("doc")&&$("doc").style.fontFamily)||'"Noto Serif Bengali",serif';
+    box.hidden=false; box.style.left=(r.left-w.left+$("erWrap").scrollLeft+p[0]*k-4)+"px"; box.style.top=(r.top-w.top+$("erWrap").scrollTop+p[1]*k-(tpx()*k)*0.75)+"px";
+    setTimeout(()=>inp.focus(),30); }
+  function textDone(){ const box=$("erIn"); if(box.hidden||!tAt) { box.hidden=true; return; } const t=$("erText").value.trim(); box.hidden=true;
+    if(t){ undo.push(ctx.getImageData(0,0,cv.width,cv.height)); if(undo.length>15) undo.shift(); $("erUndo").disabled=false; putText(tAt,t); } tAt=null; $("erText").value=""; }
+  $("erText").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); textDone(); } });
+  $("erTextOk").addEventListener("pointerdown",e=>e.preventDefault()); $("erTextOk").onclick=()=>textDone();
+  const putText=(p,t)=>{ const px=tpx();
     const fam=($("doc")&&$("doc").style.fontFamily)||'"Noto Serif Bengali",serif';
     ctx.save(); ctx.fillStyle="#000"; ctx.font=`600 ${px}px ${fam}`; ctx.textBaseline="middle"; ctx.fillText(t,p[0],p[1]); ctx.restore(); return true; };
+  window.__erTextDone=textDone;
   const pt=e=>{ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height]; };
   const dot=(a,b)=>{ const col=mode==="pen"?"#000":"#fff"; ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineCap="round"; ctx.lineJoin="round"; ctx.lineWidth=rad()*2;
     ctx.beginPath(); if(b){ ctx.moveTo(b[0],b[1]); ctx.lineTo(a[0],a[1]); ctx.stroke(); } else { ctx.arc(a[0],a[1],rad(),0,Math.PI*2); ctx.fill(); } };
   cv.addEventListener("pointerdown",e=>{ e.preventDefault(); try{cv.setPointerCapture(e.pointerId);}catch{} undo.push(ctx.getImageData(0,0,cv.width,cv.height)); if(undo.length>15) undo.shift();
+    if(mode==="text"){ undo.pop(); textAt(pt(e)); return; }
     $("erUndo").disabled=false;
-    if(mode==="text"){ if(!putText(pt(e))) undo.pop(); $("erUndo").disabled=!undo.length; return; }
     drawing=true; last=pt(e); dot(last,null); });
   cv.addEventListener("pointermove",e=>{ if(!drawing) return; const p=pt(e); dot(p,last); last=p; });
   const end=()=>{ drawing=false; last=null; }; cv.addEventListener("pointerup",end); cv.addEventListener("pointercancel",end);
   $("erUndo").onclick=()=>{ const d=undo.pop(); if(d) ctx.putImageData(d,0,0); $("erUndo").disabled=!undo.length; };
-  const close=()=>{ $("eraseOv").hidden=true; document.documentElement.style.overflow=""; fig=null; undo=[]; };
+  const close=()=>{ $("erIn").hidden=true; tAt=null; $("eraseOv").hidden=true; document.documentElement.style.overflow=""; fig=null; undo=[]; };
   $("erCancel").onclick=close;
-  $("erOk").onclick=()=>{ if(!fig||!fig.isConnected){ close(); return; } const el=fig, img=el.querySelector("img"); snapshot();
+  $("erOk").onclick=()=>{ textDone(); if(!fig||!fig.isConnected){ close(); return; } const el=fig, img=el.querySelector("img"); snapshot();
     if(!el.dataset.orig) el.dataset.orig=img.src;
     if(el.dataset.box){ el.dataset.obox=el.dataset.box; delete el.dataset.box; } // the picture is now its own image, no longer cut from the page photo
     img.onload=()=>refit(); img.src=cv.toDataURL("image/png"); $("forig").hidden=false;
