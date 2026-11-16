@@ -97,6 +97,12 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 #doc .flt{outline:1px dashed rgba(31,111,92,.45);outline-offset:1px}
 #doc .flt.on{outline:2px solid #1f6f5c;background:rgba(31,111,92,.12)}
 @media print{.doc .flt{outline:none!important;background:none!important}}
+.doc .arw{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.05;margin:0 .25em;text-indent:0}
+.doc .arw .ao,.doc .arw .au{font-size:.72em;min-height:.9em;padding:0 .35em;line-height:1.35}
+.doc .arw .al{display:block;align-self:stretch;min-width:2.2em;font-size:0;height:0;border-top:1.3px solid currentColor;position:relative;margin:.28em .1em .32em}
+.doc .arw .al::after{content:"";position:absolute;right:-2px;top:-5px;border:4.5px solid transparent;border-left:8px solid currentColor;border-right:0}
+.doc .arw .al.l::after{right:auto;left:-2px;border-left:0;border-right:8px solid currentColor}
+.doc sub,.doc sup{font-size:.72em;line-height:0}
 .doc .mk{float:right;font-weight:700;margin-left:1em;text-indent:0}
 .qbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 6px}
 .qbar .qbmk{display:inline-flex;gap:4px}
@@ -481,7 +487,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৬ নভেম্বর সকাল ২ (সূত্রের যেকোনো অংশ ✕ দিয়ে মুছুন)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৬ নভেম্বর সকাল ৩ (সূত্রকে সাধারণ লেখা বানান)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -762,6 +768,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
           <button class="btn" id="eqdel">সূত্রটা মুছুন</button>
           <button class="btn" id="eqNext" title="পরের ফাঁকা ঘরে যান">পরের ঘর ➜</button>
           <button class="btn" id="eqSym">∑ অংকের চিহ্ন</button>
+          <button class="btn" id="eqPlain" title="সূত্রটা সাধারণ লেখা হয়ে যাবে, কার্সর দিয়ে বদলানো যাবে">✎ সাধারণ লেখা বানান (কার্সর দিয়ে মুছুন/লিখুন)</button>
         </div>
         <p class="small" style="margin:0">ছোট নিয়ম: ভগ্নাংশ <code>\frac{ওপর}{নিচ}</code>, বর্গমূল <code>\sqrt{x}</code>, ঘাত <code>x^{2}</code>, নিচে ছোট <code>H_{2}</code>, θ = <code>\theta</code>, π = <code>\pi</code></p>
       </div>
@@ -22235,6 +22242,8 @@ function tcGrip(){
 $("doc").addEventListener("pointerdown",e=>{const b=topBlock(e.target);if(b)lastBlock=b;});
 
 function paintAll(el){el.querySelectorAll("[data-tex]").forEach(paintMath);}
+function repaintBn(){ const go=()=>$("doc").querySelectorAll("[data-tex]").forEach(m=>{ if(/[\u0980-\u09FF]/.test(m.dataset.tex||"")) paintMath(m); });
+  if(mjReady()) go(); else if(window.MathJax&&MathJax.startup&&MathJax.startup.promise) MathJax.startup.promise.then(()=>{ go(); refit(); }).catch(()=>{}); }
 function figHTML(dataUrl,w){return `<figure class="fi" contenteditable="false" data-w="${(w||0.6).toFixed(2)}"><img alt="চিত্র" src="${dataUrl}"></figure>`;}
 function placeAfter(anchor,html){
   const frag=document.createElement("div");frag.innerHTML=html;frag.querySelectorAll("[data-tex]").forEach(paintMath);
@@ -23129,6 +23138,38 @@ function previewEq(){
   p.innerHTML=""; try{const nd=MathJax.tex2svg(tex||"\\square",{display:true}); p.appendChild(nd); bnMtext(nd,tex||"");}catch{p.textContent=tex;}
 }
 $("eqtex").addEventListener("input",()=>{ previewEq(); if(!eqEasyBusy){ clearTimeout(window.__eqT); window.__eqT=setTimeout(eqEasy,600); } });
+/* ---------- a formula turned into ordinary text (H₂SO₄ with small letters), so the cursor can go anywhere in it ---------- */
+function tex2plain(tex){
+  const e=x=>String(x).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+  const close=(s,i,o,c)=>{ let d=0; for(let k=i;k<s.length;k++){ if(s[k]==="\\"){k++;continue;} if(s[k]===o)d++; else if(s[k]===c&&--d===0) return k+1; } return s.length; };
+  const arg=(s,i)=>{ while(s[i]===" ") i++; if(s[i]==="{"){ const e2=close(s,i,"{","}"); return [s.slice(i+1,e2-1),e2]; } if(s[i]==="\\"){ let j=i+1; while(j<s.length&&/[a-zA-Z]/.test(s[j])) j++; return [s.slice(i,Math.max(j,i+2)),Math.max(j,i+2)]; } return [s[i]||"",i+1]; };
+  const conv=s=>{ let out="",i=0;
+    while(i<s.length){ const c=s[i];
+      if(c==="\\"){ let j=i+1; if(/[a-zA-Z]/.test(s[j]||"")) while(j<s.length&&/[a-zA-Z]/.test(s[j])) j++; else j++; const nm=s.slice(i+1,j); i=j;
+        if(/^(text|mathrm|textrm|mbox|textbf|mathbf|operatorname|textit|mathit|textsf|ce)$/.test(nm)){ const [a,k]=arg(s,i); out+=nm==="ce"?conv(a):e(a); i=k; continue; }
+        if(/^[dt]?frac$/.test(nm)){ const [a,k]=arg(s,i); const [b,k2]=arg(s,k); const A=conv(a),B=conv(b); out+=(a.length>1?"("+A+")":A)+"/"+(b.length>1?"("+B+")":B); i=k2; continue; }
+        if(nm==="sqrt"){ let n=""; if(s[i]==="["){ const k=close(s,i,"[","]"); n=s.slice(i+1,k-1); i=k; } const [a,k]=arg(s,i); out+=(n?"<sup>"+conv(n)+"</sup>":"")+"√"+(a.length>1?"("+conv(a)+")":conv(a)); i=k; continue; }
+        if(/^x(right|left)arrow$/.test(nm)){ let u=""; if(s[i]==="["){ const k=close(s,i,"[","]"); u=s.slice(i+1,k-1); i=k; } const [a,k]=arg(s,i); i=k;
+          out+=`<span class="arw"><span class="ao">${conv(a)||"&#8203;"}</span><span class="al${nm[1]==="r"?"":" l"}">${nm[1]==="r"?"⟶":"⟵"}</span><span class="au">${conv(u)||"&#8203;"}</span></span>`; continue; }
+        if(nm==="overset"||nm==="stackrel"){ const [a,k]=arg(s,i); const [b,k2]=arg(s,k); out+=`<span class="arw"><span class="ao">${conv(a)}</span><span class="al">${conv(b)}</span><span class="au">&#8203;</span></span>`; i=k2; continue; }
+        if(/^(left|right|big|Big|bigl|bigr|displaystyle|limits|nolimits)$/.test(nm)) continue;
+        if(/^[,;:! ]$/.test(nm)){ out+=" "; continue; }
+        if(nm==="\\"){ out+="<br>"; continue; }
+        const GR={alpha:"α",beta:"β",gamma:"γ",delta:"δ",epsilon:"ε",theta:"θ",lambda:"λ",mu:"μ",nu:"ν",pi:"π",rho:"ρ",sigma:"σ",tau:"τ",phi:"φ",omega:"ω",Omega:"Ω",Delta:"Δ",Sigma:"Σ",Phi:"Φ",Gamma:"Γ",Lambda:"Λ",Theta:"Θ",Pi:"Π",circ:"°",degree:"°",infty:"∞",cdot:"·",to:"→",rightarrow:"→",leftarrow:"←",rightleftharpoons:"⇌",uparrow:"↑",downarrow:"↓"};
+        const sym=(typeof TEXSYM!=="undefined"&&TEXSYM[nm]!=null)?TEXSYM[nm]:GR[nm]!=null?GR[nm]:nm; out+=e(sym); continue; }
+      if(c==="^"||c==="_"){ const [a,k]=arg(s,i+1); out+=(c==="^"?"<sup>":"<sub>")+conv(a)+(c==="^"?"</sup>":"</sub>"); i=k; continue; }
+      if(c==="{"){ const k=close(s,i,"{","}"); out+=conv(s.slice(i+1,k-1)); i=k; continue; }
+      if(c==="}"){ i++; continue; }
+      out+=e(c); i++; }
+    return out.replace(/ {2,}/g," "); };
+  return conv(String(tex));
+}
+$("eqPlain").onclick=()=>{ if(!eqEl) return; const tex=$("eqtex").value.trim(); if(!tex) return;
+  snapshot(); const html=tex2plain(tex); const el=eqEl;
+  if(el.dataset.d==="1"||el.tagName==="DIV"){ const p=document.createElement("p"); p.innerHTML=html; el.replaceWith(p); }
+  else{ const t=document.createElement("span"); t.innerHTML=html; el.replaceWith(...t.childNodes); }
+  eqEl=null; closeEq(); hasExample=false; refit();
+  setStatus("সূত্রটা এখন সাধারণ লেখা। আঙুল দিয়ে যেখানে খুশি কার্সর রেখে মুছুন বা লিখুন। ভুল হলে \"↶ ফিরিয়ে আনুন\"।"); };
 $("eqok").onclick=()=>{if(!eqEl)return;snapshot();const tex=$("eqtex").value.trim();if(!tex)eqEl.remove();else{eqEl.dataset.tex=tex;paintMath(eqEl);}hasExample=false;closeEq();refit();};
 /* ---------- find and replace (like Ctrl+H in Google Docs) ---------- */
 let fHits=[], fIdx=-1;
@@ -23792,7 +23833,7 @@ async function flattenFigs(){
 }
 function blockOf(el){
   const walk=(n,b,runs,u,o,it,sz)=>{n.childNodes.forEach(c=>{
-    if(c.nodeType===3){if(c.textContent)runs.push({text:c.textContent,bold:b,ul:u,ol:o,it,sz});}
+    if(c.nodeType===3){if(c.textContent)runs.push({text:c.textContent,bold:b,ul:u,ol:o,it,sz,sc:n.closest&&n.closest("sub")?"sub":n.closest&&n.closest("sup")?"sup":""});}
     else if(c.nodeType!==1||c.classList.contains("mk")||c.classList.contains("flt")) return;
     else if(c.dataset&&c.dataset.tex!==undefined){runs.push(c.dataset.d==="1"?{eq:c.dataset.tex}:{math:c.dataset.tex});}
     else if(c.classList&&c.classList.contains("blank")) runs.push({blank:c.dataset.len||"m"});
@@ -23903,12 +23944,12 @@ $("docx").onclick=async()=>{
   const pt=land?fontPt*0.97:fontPt, size=Math.round(pt*2);
   const tw=px=>Math.round(px*15);
   const colW=tw(cw()), F={ascii:"Times New Roman",hAnsi:"Times New Roman",cs:font,eastAsia:font};
-  const TR=(text,o={})=>new D.TextRun({text:o.ol?[...text].map((ch,i,a)=>ch.trim()&&!/\p{M}/u.test(a[i+1]||"")?ch+"\u0305":ch).join(""):text,font:F,size:o.size||size,sizeComplexScript:o.size||size,bold:o.bold||$("ink").value==="700",italics:o.italics,underline:o.ul?{type:D.UnderlineType.SINGLE}:undefined});
+  const TR=(text,o={})=>new D.TextRun({text:o.ol?[...text].map((ch,i,a)=>ch.trim()&&!/\p{M}/u.test(a[i+1]||"")?ch+"\u0305":ch).join(""):text,font:F,size:o.size||size,sizeComplexScript:o.size||size,bold:o.bold||$("ink").value==="700",italics:o.italics,underline:o.ul?{type:D.UnderlineType.SINGLE}:undefined,subScript:o.sc==="sub"||undefined,superScript:o.sc==="sup"||undefined});
   const eqObj=(tex,display)=>{try{return MathConv.toDocx(D,mml(tex,display));}catch{return TR(tex);}};
   const runsD=(rs,bold)=>rs.map(r=>r.br?new D.TextRun({break:1}):r.math!==undefined?eqObj(r.math,false)
     :r.blank?new D.TextRun({text:"\u00A0".repeat({s:9,m:18,l:32}[r.blank]||18),underline:{type:D.UnderlineType.SINGLE},font:F,size})
     :r.box?new D.TextRun({text:"☐",font:{ascii:"Segoe UI Symbol",hAnsi:"Segoe UI Symbol",cs:"Segoe UI Symbol"},size:size+6})
-    :TR(r.text,{bold:bold||r.bold,ul:r.ul,ol:r.ol,italics:r.it,size:r.sz&&Math.abs(r.sz-1)>0.01?Math.round(size*r.sz):undefined}));
+    :TR(r.text,{bold:bold||r.bold,ul:r.ul,ol:r.ol,italics:r.it,sc:r.sc,size:r.sz&&Math.abs(r.sz-1)>0.01?Math.round(size*r.sz):undefined}));
   const b64=d=>{const s=atob(d.split(",")[1]);const a=new Uint8Array(s.length);for(let i=0;i<s.length;i++)a[i]=s.charCodeAt(i);return a;};
   const sp={line:Math.round(240*1.15),lineRule:D.LineRuleType.AUTO,before:0,after:0};
   const C=D.AlignmentType.CENTER;
@@ -24057,6 +24098,7 @@ function applyPaper(meta,body){
   sampleHeader=false;
   closePick(); $("doc").innerHTML=body.html||"<p><br></p>"; hasExample=false;
   fixBareInDoc(); // papers saved before the maths fix: turn leftover \frac, \times … into real maths
+  repaintBn(); // formulas with Bengali words were saved as pictures drawn the old way: draw them again
   $("doc").querySelectorAll("figure.fi").forEach(figLayout); $("doc").querySelectorAll(".lab.sel,.pick,.placing").forEach(x=>x.classList.remove("sel","pick","placing"));
   hist=[]; fut=[]; updUndo(); lastBlock=null; lastRange=null;
   curId=meta.id; store.set("curPaper",curId); $("papName").value=meta.name||"";
