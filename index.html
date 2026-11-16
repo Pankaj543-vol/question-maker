@@ -330,7 +330,9 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
     <div class="lockdev"><span class="small">আপনার যন্ত্রের নম্বর</span><b id="lockDev">…</b></div>
     <div class="row"><button class="btn" id="lockDevCopy">নম্বর কপি করুন</button><a class="btn" id="lockDevWa" target="_blank" rel="noopener" style="text-decoration:none">WhatsApp-এ পঙ্কজবাবুকে পাঠান</a></div>
     <p class="small" style="margin:0">কোড চাইতে এই নম্বরটা পঙ্কজবাবুকে পাঠান। তারপর পাওয়া কোড নিচে পেস্ট করুন।</p>
-    <input id="lockCode" type="password" placeholder="সদস্য-কোড এখানে পেস্ট করুন" spellcheck="false" autocomplete="off" autocapitalize="off" style="font:inherit;font-size:1rem;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)">
+    <button class="btn primary" id="lockSaved" type="button" hidden>🔐 আঙুলের ছাপ / সেভ করা কোড দিয়ে খুলুন</button>
+    <input id="lockUser" type="text" name="username" autocomplete="username" value="Pankaj Question Maker" readonly tabindex="-1" aria-hidden="true" style="position:absolute;opacity:0;width:1px;height:1px;pointer-events:none">
+    <input id="lockCode" type="password" name="password" placeholder="সদস্য-কোড এখানে পেস্ট করুন" spellcheck="false" autocomplete="current-password" autocapitalize="off" style="font:inherit;font-size:1rem;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)">
     <button class="btn primary" id="lockGo">চালু করুন</button>
     <p class="small" id="lockMsg" style="margin:0;color:var(--warn)" aria-live="polite"></p>
   </div>
@@ -381,20 +383,33 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
   const lock=t=>{window.PQM_OK=false;ov.hidden=false;document.documentElement.style.overflow="hidden";msg(t);};
   async function recheck(){
     const c=st.get("pqmMember");
-    if(c){ const v=await verify(c); if(v.r==="ok") return unlock(v.data); if(v.r==="expired") return lock(`${v.data.n||"আপনার"} কোডের মেয়াদ ${dtxt(v.data.e)} শেষ হয়েছে। পঙ্কজবাবুর কাছ থেকে নতুন কোড নিয়ে বসান। আপনার সেভ করা প্রশ্নপত্র মোছেনি।`); }
+    if(c){ const v=await verify(c); if(v.r==="ok"){ try{ if(!localStorage.getItem("pqmCredAsked")){ localStorage.setItem("pqmCredAsked","1"); setTimeout(()=>window.__pqmSaveCred&&window.__pqmSaveCred(c),1500); } }catch{} return unlock(v.data); } if(v.r==="expired") return lock(`${v.data.n||"আপনার"} কোডের মেয়াদ ${dtxt(v.data.e)} শেষ হয়েছে। পঙ্কজবাবুর কাছ থেকে নতুন কোড নিয়ে বসান। আপনার সেভ করা প্রশ্নপত্র মোছেনি।`); }
     if(st.get("pqmOwner")) return unlock({n:"পঙ্কজবাবু (মালিক)",e:"0"});
     if(OLD_PW_OK&&st.get("pqmKey")===OLD_PW_H) return unlock(null);
     lock("");
   }
+  // the code is also kept in Google's password list on the phone: that list is never wiped with the app, and the phone asks for the fingerprint before giving it back
+  const canCred=!!(window.PasswordCredential&&navigator.credentials&&navigator.credentials.store);
+  window.__pqmSaveCred=code=>{ if(!canCred||!code) return; try{ navigator.credentials.store(new PasswordCredential({id:"Pankaj Question Maker",password:code,name:"Pankaj Question Maker"})).catch(()=>{}); }catch{} };
+  async function fromSaved(how){
+    if(!canCred) return false;
+    try{ const c=await navigator.credentials.get({password:true,mediation:how}); if(!c||!c.password) return false;
+      const code=String(c.password).trim();
+      if(/^PQM-OWN-/.test(code)){ const ok=window.__pqmOwnerLogin&&await window.__pqmOwnerLogin(code); if(ok){ unlock({n:"পঙ্কজবাবু (মালিক)",e:"0"}); return true; } return false; }
+      if(OLD_PW_OK&&/^PQM-/.test(code)){ if(await sha(code)===OLD_PW_H){ st.set("pqmKey",OLD_PW_H); unlock(null); return true; } return false; }
+      const v=await verify(code); if(v.r==="ok"){ st.set("pqmMember",code.replace(/\s+/g,"")); unlock(v.data); return true; }
+    }catch{} return false; }
+  if(canCred){ $l("lockSaved").hidden=false; $l("lockSaved").onclick=async()=>{ msg(""); if(!await fromSaved("required")) msg("সেভ করা কোড পাওয়া গেল না। নিচে কোডটা পেস্ট করুন, তারপর Chrome \"Save password?\" জিজ্ঞেস করলে Save চাপুন।"); }; }
   document.documentElement.style.overflow="hidden";
   recheck();
+  setTimeout(()=>{ if(!window.PQM_OK) fromSaved("silent").then(ok=>{ if(!ok&&!window.PQM_OK) fromSaved("optional"); }); },700);
   window.__keep.restore().catch(()=>false).then(got=>{ const v=/^[A-Z2-9]{3}-[A-Z2-9]{3}-[A-Z2-9]{3}$/; if(!v.test(st.get("pqmDev")||"")) st.set("pqmDev",dev); else if(st.get("pqmDev")!==dev) got=true; if(!got) return; const d=st.get("pqmDev"); if(d&&d!==dev){ dev=d; window.PQM_DEV=d; $l("lockDev").textContent=d; $l("lockDevWa").href="https://wa.me/?text="+encodeURIComponent("Pankaj Question Maker-এর কোডের জন্য আমার যন্ত্রের নম্বর: "+d); } if(!window.PQM_OK) recheck(); }).catch(()=>{});
   $l("lockGo").onclick=async()=>{
     const c=$l("lockCode").value.trim(); if(!c){msg("আগে কোডটা পেস্ট করুন।");return;}
-    if(/^PQM-OWN-/.test(c)){ const ok=window.__pqmOwnerLogin&&await window.__pqmOwnerLogin(c); if(ok){ $l("lockCode").value=""; return unlock({n:"পঙ্কজবাবু (মালিক)",e:"0"}); } return msg("কোড মেলেনি।"); }
-    if(OLD_PW_OK&&/^PQM-/.test(c)){ if(await sha(c)===OLD_PW_H){ st.set("pqmKey",OLD_PW_H); $l("lockCode").value=""; return unlock(null);} return msg("কোড মেলেনি।"); }
+    if(/^PQM-OWN-/.test(c)){ const ok=window.__pqmOwnerLogin&&await window.__pqmOwnerLogin(c); if(ok){ window.__pqmSaveCred(c); $l("lockCode").value=""; return unlock({n:"পঙ্কজবাবু (মালিক)",e:"0"}); } return msg("কোড মেলেনি।"); }
+    if(OLD_PW_OK&&/^PQM-/.test(c)){ if(await sha(c)===OLD_PW_H){ st.set("pqmKey",OLD_PW_H); window.__pqmSaveCred(c); $l("lockCode").value=""; return unlock(null);} return msg("কোড মেলেনি।"); }
     const v=await verify(c);
-    if(v.r==="ok"){ st.set("pqmMember",c.replace(/\s+/g,"")); $l("lockCode").value=""; unlock(v.data); }
+    if(v.r==="ok"){ st.set("pqmMember",c.replace(/\s+/g,"")); window.__pqmSaveCred(c.replace(/\s+/g,"")); $l("lockCode").value=""; unlock(v.data); }
     else msg(v.r==="otherdev"?`এই কোড অন্য যন্ত্রের জন্য বানানো (${v.data.d})। এই যন্ত্রের নম্বর ${window.PQM_DEV} পঙ্কজবাবুকে পাঠিয়ে নতুন কোড নিন।`:v.r==="expired"?"এই কোডের মেয়াদ শেষ হয়ে গেছে।":v.r==="nocrypto"?"এই ব্রাউজারে চালু করা যাচ্ছে না। Google Chrome-এ খুলুন।":"কোড মেলেনি। পুরোটা ঠিকভাবে কপি হয়েছে কিনা দেখুন।");
   };
 })();
@@ -515,7 +530,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৬ নভেম্বর বিকেল (কোড বারবার চাইবে না)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৬ নভেম্বর বিকেল ২ (আঙুলের ছাপে খোলা)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
