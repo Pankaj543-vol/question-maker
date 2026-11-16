@@ -487,7 +487,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৬ নভেম্বর সকাল ৩ (সূত্রকে সাধারণ লেখা বানান)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৬ নভেম্বর সকাল ৪ (সূত্রে কার্সর: ওপরের সবুজ বোতাম)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -758,6 +758,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
         <span class="pill" id="info">—</span>
       </div>
       <div class="eqedit" id="eqedit" hidden>
+        <button class="btn primary" id="eqPlain" style="width:100%;text-align:left;line-height:1.4">✎ কার্সর দিয়ে মুছতে বা লিখতে চাইলে এখানে চাপুন<br><small style="font-weight:400">সবুজ বাক্স চলে যাবে, সূত্রটা সাধারণ লেখা হবে, তারপর যেখানে খুশি কার্সর রাখুন</small></button>
         <div id="eqEasy" class="eqeasy" hidden><b style="font-size:.92rem">সহজে বদলান</b> <span class="small">(সূত্রের লেখা, সংখ্যা আর চিহ্ন, কোড ছাড়াই। ঘরে লিখে বদলান, ✕ চাপলে সেটা মুছে যাবে। নিচে সঙ্গে সঙ্গে দেখাবে।)</span><div id="eqFields" class="eqfields"></div></div>
         <label for="eqtex" class="small">সূত্রটা কোডে লেখা আছে। ভুল অক্ষর বা সংখ্যা বদলে দিন, নিচে সাথে সাথে দেখাবে।</label>
         <textarea id="eqtex" spellcheck="false"></textarea>
@@ -768,7 +769,6 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
           <button class="btn" id="eqdel">সূত্রটা মুছুন</button>
           <button class="btn" id="eqNext" title="পরের ফাঁকা ঘরে যান">পরের ঘর ➜</button>
           <button class="btn" id="eqSym">∑ অংকের চিহ্ন</button>
-          <button class="btn" id="eqPlain" title="সূত্রটা সাধারণ লেখা হয়ে যাবে, কার্সর দিয়ে বদলানো যাবে">✎ সাধারণ লেখা বানান (কার্সর দিয়ে মুছুন/লিখুন)</button>
         </div>
         <p class="small" style="margin:0">ছোট নিয়ম: ভগ্নাংশ <code>\frac{ওপর}{নিচ}</code>, বর্গমূল <code>\sqrt{x}</code>, ঘাত <code>x^{2}</code>, নিচে ছোট <code>H_{2}</code>, θ = <code>\theta</code>, π = <code>\pi</code></p>
       </div>
