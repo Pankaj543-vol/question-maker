@@ -88,6 +88,9 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 .eqeasy{display:flex;flex-direction:column;gap:6px;padding:8px;border:1.5px solid var(--accent);border-radius:9px;margin-bottom:6px}
 .eqfields{display:flex;flex-wrap:wrap;gap:6px 10px}
 .eqf{display:flex;flex-direction:column;gap:2px;font-size:.72rem;color:var(--muted)}
+.eqfr{display:flex;align-items:center;gap:2px}
+.eqx{border:1px solid var(--line);background:var(--bg);color:var(--warn);border-radius:6px;font:inherit;font-size:.85rem;line-height:1;padding:7px 7px;cursor:pointer}
+.eqsym{display:inline-block;min-width:1.6em;text-align:center;font-size:1.1rem;color:var(--fg);padding:5px 6px;border:1px dashed var(--line);border-radius:7px;font-family:serif}
 .eqf input{font:inherit;font-size:1rem;color:var(--fg);padding:6px 8px;border:1px solid var(--line);border-radius:7px;background:var(--bg);min-width:3em;max-width:70vw}
 .doc .hasflt{position:relative}
 .doc .flt{position:absolute;white-space:nowrap;line-height:1.1;text-indent:0;z-index:3;cursor:move;touch-action:none;user-select:none;-webkit-user-select:none}
@@ -478,7 +481,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৬ নভেম্বর সকাল (গাঢ় H₂SO₄ ঠিক)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৬ নভেম্বর সকাল ২ (সূত্রের যেকোনো অংশ ✕ দিয়ে মুছুন)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -749,7 +752,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
         <span class="pill" id="info">—</span>
       </div>
       <div class="eqedit" id="eqedit" hidden>
-        <div id="eqEasy" class="eqeasy" hidden><b style="font-size:.92rem">সহজে বদলান</b> <span class="small">(সূত্রের লেখা আর সংখ্যা, কোড ছাড়াই। বদলালেই নিচে দেখাবে।)</span><div id="eqFields" class="eqfields"></div></div>
+        <div id="eqEasy" class="eqeasy" hidden><b style="font-size:.92rem">সহজে বদলান</b> <span class="small">(সূত্রের লেখা, সংখ্যা আর চিহ্ন, কোড ছাড়াই। ঘরে লিখে বদলান, ✕ চাপলে সেটা মুছে যাবে। নিচে সঙ্গে সঙ্গে দেখাবে।)</span><div id="eqFields" class="eqfields"></div></div>
         <label for="eqtex" class="small">সূত্রটা কোডে লেখা আছে। ভুল অক্ষর বা সংখ্যা বদলে দিন, নিচে সাথে সাথে দেখাবে।</label>
         <textarea id="eqtex" spellcheck="false"></textarea>
         <div class="eqprev" id="eqprev"></div>
@@ -23075,7 +23078,10 @@ function texFields(tex){
   const walk=(s,lab)=>{ let i=0;
     while(i<s.length){ const c=s[i];
       if(c==="\\"){ let j=i+1; if(/[a-zA-Z]/.test(s[j]||"")) while(j<s.length&&/[a-zA-Z]/.test(s[j])) j++; else j++;
-        const name=s.slice(i+1,j); fx(s.slice(i,j)); i=j;
+        const name=s.slice(i+1,j);
+        const SYM=(typeof TEXSYM!=="undefined"&&TEXSYM[name]!=null&&!EQ_LAB2[name]&&!EQ_TXT.test(name))?TEXSYM[name]:null;
+        if(SYM&&/\S/.test(SYM)){ P.push({t:"s",v:s.slice(i,j),show:SYM}); i=j; continue; }
+        fx(s.slice(i,j)); i=j;
         if(/^(sqrt|xrightarrow|xleftarrow)$/.test(name)&&s[i]==="["){ const e=eqCloseB(s,i,"[","]"); fx("["); walk(s.slice(i+1,e-1),name==="sqrt"?"মূলের ঘাত":"তীরের নিচে"); fx("]"); i=e; }
         const labs=EQ_TXT.test(name)?[lab||"লেখা"]:EQ_LAB2[name];
         if(labs) for(const L of labs){ while(s[i]===" "){fx(" ");i++;} if(s[i]!=="{") break; const e=eqCloseB(s,i,"{","}"), inner=s.slice(i+1,e-1); fx("{");
@@ -23087,22 +23093,31 @@ function texFields(tex){
         continue; }
       if(c==="{"){ const e=eqCloseB(s,i,"{","}"); fx("{"); walk(s.slice(i+1,e-1),lab); fx("}"); i=e; continue; }
       const m=s.slice(i).match(/^[A-Za-z0-9.ঀ-৿]+/); if(m){ ed(m[0],lab||"লেখা"); i+=m[0].length; continue; }
+      if(/[+\-=<>,;:!|/()\[\]×÷]/.test(c)){ P.push({t:"s",v:c,show:c}); i++; continue; }
       fx(c); i++; } };
   walk(String(tex),""); return P;
 }
-function texJoin(P){ return P.map(p=>{ if(p.t==="f") return p.v; let v=p.v;
+function texJoin(P){ return P.map(p=>{ if(p.t==="f"||p.t==="s") return p.v; let v=p.v;
   if(!p.txt){ if(/[ঀ-৿ ]/.test(v.trim())) v="\\text{"+v+"}"; else v=v.replace(/\s+/g,""); }
   else v=v.replace(/[{}\\]/g,"");
   if(p.wrap&&v.length!==1) v="{"+v+"}"; return v; }).join(""); }
 let eqP=null, eqEasyBusy=false;
 function eqEasy(){
   const box=$("eqFields"); if(!box) return; eqP=texFields($("eqtex").value);
-  const E=eqP.filter(p=>p.t==="e"); $("eqEasy").hidden=!E.length; box.innerHTML="";
-  E.forEach(p=>{ const w=document.createElement("label"); w.className="eqf";
-    const s=document.createElement("span"); s.textContent=p.lab; const inp=document.createElement("input"); inp.value=p.v; inp.autocomplete="off"; inp.spellcheck=false;
-    inp.style.width=Math.max(3,Math.min(18,[...p.v].length+2))+"em";
-    inp.addEventListener("input",()=>{ p.v=inp.value; eqEasyBusy=true; $("eqtex").value=texJoin(eqP); previewEq(); eqEasyBusy=false; });
-    w.append(s,inp); box.appendChild(w); });
+  const E=eqP.filter(p=>p.t==="e"||p.t==="s"); $("eqEasy").hidden=!E.length; box.innerHTML="";
+  const upd=()=>{ eqEasyBusy=true; $("eqtex").value=texJoin(eqP); previewEq(); eqEasyBusy=false; };
+  E.forEach(p=>{ const w=document.createElement("div"); w.className="eqf";
+    const s=document.createElement("span"); s.textContent=p.t==="s"?"চিহ্ন":p.lab;
+    const row=document.createElement("div"); row.className="eqfr";
+    const x=document.createElement("button"); x.type="button"; x.className="eqx"; x.textContent="✕"; x.title="এটা মুছুন"; x.setAttribute("aria-label","এটা মুছুন");
+    if(p.t==="s"){ const c=document.createElement("b"); c.className="eqsym"; c.textContent=p.show; row.append(c,x);
+      x.onclick=()=>{ p.v=""; w.remove(); upd(); }; }
+    else{ const inp=document.createElement("input"); inp.value=p.v; inp.autocomplete="off"; inp.spellcheck=false;
+      inp.style.width=Math.max(3,Math.min(18,[...p.v].length+2))+"em";
+      inp.addEventListener("input",()=>{ p.v=inp.value; upd(); });
+      x.onclick=()=>{ inp.value=""; p.v=""; upd(); inp.focus(); };
+      row.append(inp,x); }
+    w.append(s,row); box.appendChild(w); });
 }
 function openEq(el){closeEq();closeFig();eqEl=el;el.classList.add("sel");$("eqtex").value=el.dataset.tex;previewEq();eqEasy();$("eqedit").hidden=false;if($("eqEasy").hidden)$("eqtex").focus();}
 let eqNew=false, symBack=false;
