@@ -297,6 +297,32 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head><body>
+<script>
+/* keep the membership safe: written in four places (local storage, a cookie, IndexedDB, the app's cache), so a phone lock, cleaner app or full storage that wipes one place does not ask for the code again */
+(function(){
+  const KEYS=["pqmMember","pqmDev","pqmKey","pqmOwner","pqmSeen"], CK="pqmk_";
+  const ls={get(k){try{return localStorage.getItem(k);}catch{return null;}},set(k,v){try{localStorage.setItem(k,v);}catch{}},del(k){try{localStorage.removeItem(k);}catch{}}};
+  const path=location.pathname.replace(/[^/]*$/,"")||"/";
+  const ck={get(k){ try{ const m=document.cookie.match(new RegExp("(?:^|; )"+CK+k+"=([^;]*)")); return m?decodeURIComponent(m[1]):null; }catch{ return null; } },
+    set(k,v){ try{ document.cookie=CK+k+"="+encodeURIComponent(v)+";max-age=315360000;path="+path+";SameSite=Lax"+(location.protocol==="https:"?";Secure":""); }catch{} },
+    del(k){ try{ document.cookie=CK+k+"=;max-age=0;path="+path; }catch{} } };
+  const idb=()=>new Promise((ok,no)=>{ try{ const r=indexedDB.open("pqmKeep",1); r.onupgradeneeded=()=>r.result.createObjectStore("kv"); r.onsuccess=()=>ok(r.result); r.onerror=()=>no(r.error); }catch(e){ no(e); } });
+  const idbSet=async(k,v)=>{ try{ const d=await idb(); const t=d.transaction("kv","readwrite"); v==null?t.objectStore("kv").delete(k):t.objectStore("kv").put(v,k); }catch{} };
+  const idbAll=async()=>{ try{ const d=await idb(); return await new Promise(ok=>{ const o={}, t=d.transaction("kv"), s=t.objectStore("kv"), r=s.openCursor(); r.onsuccess=()=>{ const c=r.result; if(c){ o[c.key]=c.value; c.continue(); } else ok(o); }; r.onerror=()=>ok({}); }); }catch{ return {}; } };
+  const cacheSet=async(k,v)=>{ try{ const c=await caches.open("pqm-keep"); const u=path+"__keep/"+k; if(v==null) await c.delete(u); else await c.put(u,new Response(v)); }catch{} };
+  const cacheAll=async()=>{ try{ const c=await caches.open("pqm-keep"), o={}; for(const k of KEYS){ const r=await c.match(path+"__keep/"+k); if(r) o[k]=await r.text(); } return o; }catch{ return {}; } };
+  window.__keep={
+    get(k){ let v=ls.get(k); if(v==null){ v=ck.get(k); if(v!=null) ls.set(k,v); } return v; },
+    set(k,v){ ls.set(k,v); if(KEYS.includes(k)){ ck.set(k,v); idbSet(k,v); cacheSet(k,v); } },
+    del(k){ ls.del(k); if(KEYS.includes(k)){ ck.del(k); idbSet(k,null); cacheSet(k,null); } },
+    async restore(){ // fill local storage back from the slower places; true when something came back
+      const a=await idbAll(), b=await cacheAll(); let got=false;
+      for(const k of KEYS){ if(ls.get(k)==null){ const v=a[k]??b[k]??ck.get(k); if(v!=null){ ls.set(k,v); got=true; } } }
+      for(const k of KEYS){ const v=ls.get(k); if(v!=null){ if(ck.get(k)!==v) ck.set(k,v); if(a[k]!==v) idbSet(k,v); if(b[k]!==v) cacheSet(k,v); } }
+      return got; } };
+  try{ navigator.storage&&navigator.storage.persist&&navigator.storage.persist().catch(()=>{}); }catch{}
+})();
+</script>
 <div class="lockov" id="lockov" role="dialog" aria-label="অ্যাপ চালু করুন">
   <div class="lockbox">
     <b style="font-size:1.15rem">Pankaj Question Maker</b>
@@ -314,9 +340,9 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 (function(){
   const PUB={"key_ops":["verify"],"ext":true,"kty":"EC","x":"VOhX1jW1LN2T-9YKILuwGfV8yYXsINs-TX60vG-IuUQ","y":"aSnxCahaHi0MVeeCpJhGBgQIhaKcbKakPQlphDCW0I0","crv":"P-256"}, OLD_PW_OK=true, OLD_PW_H="7f8a86e820e0363ff2c298f97871b75d727ecf70b28e406a27fb448f070a3e57";
   const DEV_AL="ABCDEFGHJKMNPQRSTUVWXYZ23456789";
-  const $l=id=>document.getElementById(id), st={get(k){try{return localStorage.getItem(k);}catch{return null;}},set(k,v){try{localStorage.setItem(k,v);}catch{}}};
+  const $l=id=>document.getElementById(id), st={get:k=>window.__keep.get(k),set:(k,v)=>window.__keep.set(k,v)};
   let dev=st.get("pqmDev");
-  if(!dev||!/^[A-Z2-9]{3}-[A-Z2-9]{3}-[A-Z2-9]{3}$/.test(dev)){ const r=crypto.getRandomValues(new Uint8Array(9)); dev=[...r].map(x=>DEV_AL[x%DEV_AL.length]).join("").replace(/(...)(...)(...)/,"$1-$2-$3"); st.set("pqmDev",dev); }
+  if(!dev||!/^[A-Z2-9]{3}-[A-Z2-9]{3}-[A-Z2-9]{3}$/.test(dev)){ const r=crypto.getRandomValues(new Uint8Array(9)); dev=[...r].map(x=>DEV_AL[x%DEV_AL.length]).join("").replace(/(...)(...)(...)/,"$1-$2-$3"); } // kept only after checking the other places for an older number
   window.PQM_DEV=dev; $l("lockDev").textContent=dev;
   $l("lockDevWa").href="https://wa.me/?text="+encodeURIComponent("Pankaj Question Maker-এর কোডের জন্য আমার যন্ত্রের নম্বর: "+dev);
   $l("lockDevCopy").onclick=async()=>{ try{ await navigator.clipboard.writeText(dev); $l("lockMsg").textContent="নম্বর কপি হয়েছে।"; }catch{ $l("lockMsg").textContent="নম্বরটা লিখে পাঠান: "+dev; } };
@@ -362,6 +388,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
   }
   document.documentElement.style.overflow="hidden";
   recheck();
+  window.__keep.restore().catch(()=>false).then(got=>{ const v=/^[A-Z2-9]{3}-[A-Z2-9]{3}-[A-Z2-9]{3}$/; if(!v.test(st.get("pqmDev")||"")) st.set("pqmDev",dev); else if(st.get("pqmDev")!==dev) got=true; if(!got) return; const d=st.get("pqmDev"); if(d&&d!==dev){ dev=d; window.PQM_DEV=d; $l("lockDev").textContent=d; $l("lockDevWa").href="https://wa.me/?text="+encodeURIComponent("Pankaj Question Maker-এর কোডের জন্য আমার যন্ত্রের নম্বর: "+d); } if(!window.PQM_OK) recheck(); }).catch(()=>{});
   $l("lockGo").onclick=async()=>{
     const c=$l("lockCode").value.trim(); if(!c){msg("আগে কোডটা পেস্ট করুন।");return;}
     if(/^PQM-OWN-/.test(c)){ const ok=window.__pqmOwnerLogin&&await window.__pqmOwnerLogin(c); if(ok){ $l("lockCode").value=""; return unlock({n:"পঙ্কজবাবু (মালিক)",e:"0"}); } return msg("কোড মেলেনি।"); }
@@ -398,7 +425,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 /* the owner's code maker: hidden from everyone else, the signing key opens only with the owner password */
 (function(){
   const BOX={"s":"dLdsRZx54sFjo5qVKqvIfQ==","i":"n7gJULoI7ZdANtpR","c":"vunzGQ3wgRyOnt9shlak+H5cQRI2ODegHd/3iBBOgEb6r7z+zkWpJ6UYytNHcTLyVoLQTDpse70cTIw="}, PUB={"key_ops":["verify"],"ext":true,"kty":"EC","x":"VOhX1jW1LN2T-9YKILuwGfV8yYXsINs-TX60vG-IuUQ","y":"aSnxCahaHi0MVeeCpJhGBgQIhaKcbKakPQlphDCW0I0","crv":"P-256"}, $o=id=>document.getElementById(id);
-  const st={get(k){try{return localStorage.getItem(k);}catch{return null;}},set(k,v){try{localStorage.setItem(k,v);}catch{}},del(k){try{localStorage.removeItem(k);}catch{}}};
+  const st={get:k=>window.__keep.get(k),set:(k,v)=>window.__keep.set(k,v),del:k=>window.__keep.del(k)};
   const unb=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
   const b64u=b=>btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
   const ymd=d=>`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`;
@@ -488,7 +515,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৬ নভেম্বর দুপুর ২ (ছবিতে ট্যাপ করে সেখানেই লিখুন)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৬ নভেম্বর বিকেল (কোড বারবার চাইবে না)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
