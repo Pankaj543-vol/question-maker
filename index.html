@@ -478,7 +478,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৫ নভেম্বর রাত (Gemini-কে আঁকার ভালো নির্দেশ)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৬ নভেম্বর সকাল (গাঢ় H₂SO₄ ঠিক)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -21742,8 +21742,17 @@ const mjReady=()=>!!(window.MathJax&&MathJax.tex2svg);
 function bnMtext(node,tex){ // MathJax draws Bengali letter by letter, which breaks the joined letters (ি, ্ …): write each Bengali \text{…} as one piece
   const words=[...String(tex).matchAll(/\\(?:text|mbox|textrm)\s*\{([^{}]*)\}/g)].map(m=>m[1]).filter(w=>/[\u0980-\u09FF]/.test(w)); if(!words.length) return;
   let k=0; const fam=($("doc")&&$("doc").style.fontFamily)||'"Noto Serif Bengali",serif';
+  // measure in a hidden spot that is on screen (a picture not yet on the page, or in a closed panel, has no size)
+  const host=node.parentNode, nxt=node.nextSibling; let M=document.getElementById("mjMeasure");
+  if(!M){ M=document.createElement("div"); M.id="mjMeasure"; M.setAttribute("aria-hidden","true"); M.style.cssText="position:absolute;left:-9999px;top:0;visibility:hidden;pointer-events:none"; document.body.appendChild(M); }
+  M.appendChild(node);
+  try{
   node.querySelectorAll('g[data-mml-node="mtext"]').forEach(g=>{ const ts=[...g.querySelectorAll(":scope > text")]; if(!ts.length||!/[\u0980-\u09FF]/.test(g.textContent)) return;
-    const ns=x=>String(x).replace(/\s+/g,""), gt=ns(g.textContent); let j=words.findIndex((x,i)=>x!=null&&ns(x)===gt); if(j<0) j=words.findIndex(x=>x!=null); if(j<0) return; const w=words[j]; words[j]=null; k++; ts[0].textContent=w; ts[0].setAttribute("font-family",fam); ts.slice(1).forEach(t=>t.remove()); });
+    const ns=x=>String(x).replace(/[^\u0980-\u09FF]/g,""), gt=ns(g.textContent); let j=words.findIndex((x,i)=>x!=null&&ns(x)===gt); if(j<0) j=words.findIndex(x=>x!=null); if(j<0) return; const w=words[j]; words[j]=null; k++; let w0=0; try{ w0=g.getBBox().width; }catch{}
+    [...g.childNodes].forEach(c=>{ if(c!==ts[0]) c.remove(); }); // Latin letters in the same \\text are drawn as shapes, not text: take them out too, the whole word is written once
+    ts[0].textContent=w; ts[0].setAttribute("font-family",fam); ts[0].removeAttribute("x");
+    try{ const w1=ts[0].getComputedTextLength(); if(w0>0&&w1>0){ if(w1>w0*1.02){ ts[0].setAttribute("textLength",w0); ts[0].setAttribute("lengthAdjust","spacingAndGlyphs"); } else ts[0].setAttribute("x",(/[A-Za-z0-9]\s*$/.test(w)?(w0-w1):(w0-w1)/2).toFixed(1)); } }catch{} }); // a word ending in a Latin letter (গাঢ় H) sits next to what follows, e.g. ₂SO₄
+  } finally { if(host) host.insertBefore(node,nxt&&nxt.parentNode===host?nxt:null); else node.remove(); }
 }
 function paintMath(el){
   const tex=el.dataset.tex, d=el.dataset.d==="1";
