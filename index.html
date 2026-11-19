@@ -530,7 +530,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৭ নভেম্বর দুপুর (PDF সবসময় A4)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৯ নভেম্বর (ছাপা আগের মতো)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -23948,7 +23948,7 @@ $("pdf").onclick=async()=>{
     const w=document.createElement("div"); w.className="pwrap"; w.appendChild(s.el); area.appendChild(w); }); // one paper each; turned to fit if the printer page is the other way
   document.body.appendChild(area);
   let ps=$("printPage"); if(!ps){ ps=document.createElement("style"); ps.id="printPage"; document.head.appendChild(ps); }
-  ps.textContent=`@page{size:A4 ${land?"landscape":"portrait"};margin:0}`; // always A4; where the phone ignores this, the sheets still turn themselves to fit // paper direction is left to the print screen; the sheets turn themselves to fit
+  ps.textContent=`@page{margin:0}`; // paper direction is left to the print screen; the sheets turn themselves to fit (a forced A4 size made phones split each sheet in two)
   const oldTitle=document.title; document.title=fileBase(); // Chrome's "Save as PDF" uses this as the file name
   const done=()=>{ document.title=oldTitle; const a=$("printArea"); if(a) a.remove(); window.removeEventListener("afterprint",done); };
   window.addEventListener("afterprint",done);
