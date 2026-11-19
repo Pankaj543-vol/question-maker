@@ -104,6 +104,10 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 .doc .arw .al.l::after{right:auto;left:-2px;border-left:0;border-right:8px solid currentColor}
 .doc sub,.doc sup{font-size:.72em;line-height:0}
 #eraseOv .erm.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.pgpick{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:10px;border:2px solid var(--accent);border-radius:10px;margin-bottom:8px}
+.pgpick label{font-weight:700;font-size:1rem}
+.pgpick select{font:inherit;font-size:1rem;padding:8px}
+.pgpick .small{width:100%}
 .doc .mk{float:right;font-weight:700;margin-left:1em;text-indent:0}
 .qbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 6px}
 .qbar .qbmk{display:inline-flex;gap:4px}
@@ -530,7 +534,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৯ নভেম্বর ৩ (যত পাতায় চান ধরান)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৯ নভেম্বর ৪ (PDF বোতামের ওপরে "কত পাতায়")</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -778,6 +782,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 
       <div class="step">
         <h2><span>৪</span>বের করুন</h2>
+        <div class="pgpick"><label for="pages3">📄 প্রশ্নপত্র কত পাতায় হবে?</label><select id="pages3" aria-label="কত পাতায়"></select><span class="small" id="pgInfo3"></span></div>
         <button class="btn primary" id="pdf">🖨 ঝকঝকে PDF / সরাসরি ছাপুন</button>
         <div style="height:8px"></div>
         <button class="btn wide" id="docx">Word ফাইল (.docx) নামান, Google Docs-এ এডিটের জন্য</button>
@@ -22924,7 +22929,7 @@ function pageOptions(){
                          :[["0","যতটা লাগে"],...[1,2,3,4,5,6,8,10].map(n=>[String(n),B[n]+" পাতা"])];
   sel.innerHTML=opts.map(([v,t])=>`<option value="${v}">${t}</option>`).join("");
   sel.value=opts.some(o=>o[0]===keep)?keep:opts[0][0];
-  { const s2=$("pages2"); if(s2){ s2.innerHTML=sel.innerHTML; s2.value=sel.value; } }
+  ["pages2","pages3"].forEach(id=>{ const s2=$(id); if(s2){ s2.innerHTML=sel.innerHTML; s2.value=sel.value; } });
   $("modenote").textContent=mode==="booklet"
     ?"A4 কাগজ আড়াআড়ি, মাঝখান থেকে দুভাগ। প্রথম কাগজের সামনে পাতা ৪ আর ১, পেছনে ২ আর ৩। দুপিঠে ছাপিয়ে ভাঁজ করলেই প্রশ্নপত্র।"
     :mode==="dup"?"ছোট প্রশ্নপত্রের জন্য। A4 আড়াআড়ি, দুই ভাগে একই প্রশ্ন। সামনে পাতা ১ | পাতা ১, পেছনে পাতা ২ | পাতা ২। মাঝখান থেকে কাটলে দুটো প্রশ্নপত্র।"
@@ -22982,6 +22987,7 @@ function refit(){
   $("info").textContent=mode==="booklet"?`${bn(total)} পাতা · ${bn(sheets)} কাগজ · ${bn(fontPt)}pt${note}`
     :(mode==="dup"||mode==="pdup")?`${bn(pageList.length)} পাতা · প্রতি কাগজে ২ কপি · ${bn(fontPt)}pt${note}`
     :`${bn(pageList.length)} পাতা · ${bn(fontPt)}pt${note}`;
+  if($("pgInfo3")) $("pgInfo3").textContent="এখন: "+$("info").textContent;
   const g=$("guides"); g.innerHTML="";
   pageList.forEach((p,i)=>{const w=wmEl(G.pageW,ch()+MG().t+MG().b); if(w){ w.style.left=(MG().l+cw()/2)+"px"; w.style.top=(MG().t+((p[0]&&p[0].offsetTop)||0)+ch()/2)+"px"; g.appendChild(w); } });
   pageList.forEach((p,i)=>{if(!i)return;const d=document.createElement("div");d.className="brk";d.style.top=(MG().t+p[0].offsetTop-3)+"px";d.innerHTML=`<i>পাতা ${bn(i+1)}</i>`;g.appendChild(d);});
@@ -23063,8 +23069,7 @@ document.querySelectorAll("#margWrap [data-mk]").forEach(b=>{ b.onclick=()=>{
 $("margReset").onclick=()=>{ margMM=null; store.set("margMM","null"); showMarg(); refit(); setStatus("মার্জিন আবার আগের মতো করা হল।"); };
 showMarg();
 $("cutLine").onchange=()=>{if(!$("viewPane").hidden)buildPreview();};
-$("pages").onchange=()=>{ $("pages2").value=$("pages").value; refit(); };
-$("pages2").onchange=()=>{ $("pages").value=$("pages2").value; refit(); const n=Number($("pages").value); setStatus(n?`প্রশ্নপত্র ${bn(n)} পাতায় ধরানো হচ্ছে।`:"যতটা পাতা লাগে ততটা।"); }; $("font").onchange=refit;
+["pages","pages2","pages3"].forEach(id=>{ const el=$(id); if(!el) return; el.onchange=()=>{ ["pages","pages2","pages3"].forEach(o=>{ if(o!==id&&$(o)) $(o).value=el.value; }); refit(); const n=Number(el.value); setStatus(n?`প্রশ্নপত্র ${bn(n)} পাতায় ধরানো হচ্ছে।`:"যতটা পাতা লাগে ততটা।"); }; }); $("font").onchange=refit;
 try{ const iw=localStorage.getItem("inkW"); if(iw&&[...$("ink").options].some(o=>o.value===iw)) $("ink").value=iw; }catch{}
 $("ink").onchange=()=>{ try{localStorage.setItem("inkW",$("ink").value);}catch{} refit(); };
 $("doc").addEventListener("input",()=>{hasExample=false;refitSoon();});
@@ -24164,7 +24169,7 @@ function applyPaper(meta,body){
   const set=body.set||{};
   if(set.mode&&MODES[set.mode]){ mode=set.mode; G=MODES[mode]; const r={booklet:"mBook",a4:"mA4",dup:"mDup",land1:"mLand1",pdup:"mPdup"}[mode]; if($(r))$(r).checked=true; if(typeof showLayout==="function") showLayout(); }
   pageOptions();
-  if(set.pages!==undefined&&[...$("pages").options].some(o=>o.value===String(set.pages))) $("pages").value=String(set.pages); if($("pages2")) $("pages2").value=$("pages").value;
+  if(set.pages!==undefined&&[...$("pages").options].some(o=>o.value===String(set.pages))) $("pages").value=String(set.pages); ["pages2","pages3"].forEach(id=>{ if($(id)) $(id).value=$("pages").value; });
   if(set.font&&[...$("font").options].some(o=>o.value===set.font)) $("font").value=set.font;
   if(set.cut!==undefined) $("cutLine").checked=!!set.cut;
   if(set.gap!==undefined&&isFinite(set.gap)) gapMM=Math.max(0,Math.min(60,Number(set.gap))); showGap();
