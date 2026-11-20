@@ -283,6 +283,17 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
   #printArea.pland .pwrap{width:210mm;height:296.5mm}
   #printArea.pland .psheet{transform:translateX(210mm) rotate(90deg)!important}
 }
+/* paper set to US "Letter" on some phones (a little shorter, a little wider than A4): shrink each sheet by 6.5% and centre it, so nothing is cut */
+@media print and (orientation:landscape) and (max-width:290mm){
+  #printArea.pland .pwrap,#printArea.pport .pwrap{width:279mm;height:215mm}
+  #printArea.pland .psheet{transform:translate(.8mm,9.7mm) scale(.935)!important}
+  #printArea.pport .psheet{transform:translate(.8mm,9.7mm) translateY(196.35mm) rotate(-90deg) scale(.935)!important}
+}
+@media print and (orientation:portrait) and (max-height:290mm){
+  #printArea.pport .pwrap,#printArea.pland .pwrap{width:215mm;height:279mm}
+  #printArea.pport .psheet{transform:translate(9.7mm,.8mm) scale(.935)!important}
+  #printArea.pland .psheet{transform:translate(9.7mm,.8mm) translateX(196.35mm) rotate(90deg) scale(.935)!important}
+}
 .margbox{margin-top:10px;display:flex;flex-direction:column;gap:6px}
 .marggrid{display:grid;grid-template-columns:auto auto 5.2em auto;gap:6px 8px;align-items:center;justify-content:start}
 .marggrid b{text-align:center;font-variant-numeric:tabular-nums}
@@ -534,7 +545,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২০ নভেম্বর ২ (সব ফোনে PDF-এ পুরো প্রশ্নপত্র)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২০ নভেম্বর ৩ (Letter কাগজেও ঠিক)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
