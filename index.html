@@ -534,7 +534,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ১৯ নভেম্বর ৪ (PDF বোতামের ওপরে "কত পাতায়")</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২০ নভেম্বর (ব্রাউজারের মেনু থেকে ছাপলেও প্রশ্নপত্র)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -23973,6 +23973,19 @@ $("pdf").onclick=async()=>{
   setTimeout(()=>{ if(!matchMedia("print").matches) done(); },60000);
 };
 
+/* printing from the browser's own menu (⋮ → Share/Print), not from the app's button: build the pages anyway, so the PDF is the question paper and not one blank page */
+window.addEventListener("beforeprint",()=>{
+  if($("printArea")||!window.PQM_OK) return;
+  try{
+    const land=sheetLand(), sheets=buildSheets(true);
+    const area=document.createElement("div"); area.id="printArea"; area.setAttribute("aria-hidden","true"); area.className=land?"pland":"pport"; area.dataset.auto="1";
+    sheets.forEach(sh=>{ sh.el.style.position="relative"; sh.el.style.transform="none"; sh.el.style.boxShadow="none"; const w=document.createElement("div"); w.className="pwrap"; w.appendChild(sh.el); area.appendChild(w); });
+    document.body.appendChild(area);
+    let ps=$("printPage"); if(!ps){ ps=document.createElement("style"); ps.id="printPage"; document.head.appendChild(ps); } ps.textContent="@page{margin:0}";
+    window.__autoTitle=document.title; document.title=fileBase();
+  }catch{}
+});
+window.addEventListener("afterprint",()=>{ const a=$("printArea"); if(a&&a.dataset.auto){ a.remove(); if(window.__autoTitle) document.title=window.__autoTitle; } });
 /* the exact pages that go into the PDF, shown before saving */
 let pdfZoom=100;
 function showPdfCheck(shots,name,blob,land){
