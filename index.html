@@ -534,7 +534,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২০ নভেম্বর (ব্রাউজারের মেনু থেকে ছাপলেও প্রশ্নপত্র)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২০ নভেম্বর ২ (সব ফোনে PDF-এ পুরো প্রশ্নপত্র)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -23965,20 +23965,24 @@ $("pdf").onclick=async()=>{
   let ps=$("printPage"); if(!ps){ ps=document.createElement("style"); ps.id="printPage"; document.head.appendChild(ps); }
   ps.textContent=`@page{margin:0}`; // paper direction is left to the print screen; the sheets turn themselves to fit (a forced A4 size made phones split each sheet in two)
   const oldTitle=document.title; document.title=fileBase(); // Chrome's "Save as PDF" uses this as the file name
-  const done=()=>{ document.title=oldTitle; const a=$("printArea"); if(a) a.remove(); window.removeEventListener("afterprint",done); };
-  window.addEventListener("afterprint",done);
+  area.dataset.at=String(Date.now());
+  const done=()=>{ document.title=oldTitle; const a=$("printArea"); if(a&&!a.dataset.auto) a.remove(); window.removeEventListener("afterprint",early); window.removeEventListener("focus",back); };
+  // some phones (e.g. Samsung, Xiaomi browsers) say "printing finished" at once, before their print screen has copied the pages: then the pages stay until the person comes back to the app
+  const early=()=>{ if(Date.now()-Number(area.dataset.at)>4000) done(); };
+  const back=()=>{ if(Date.now()-Number(area.dataset.at)>4000) setTimeout(done,1500); };
+  window.addEventListener("afterprint",early); window.addEventListener("focus",back);
   setStatus(land?"ছাপার পাতা খুলছে। PDF চাইলে \"Save as PDF\" বাছুন। Paper size-এ অবশ্যই \"A4\" (ISO A4) বাছুন, আর Orientation-এ \"Landscape\" (আড়াআড়ি)। কাগজে ছাপার সময় \"দুপিঠে, ছোট দিক বরাবর উল্টে\" (Both sides, flip on short edge) বাছবেন।":"ছাপার পাতা খুলছে। PDF চাইলে \"Save as PDF\" বাছুন। Paper size-এ অবশ্যই \"A4\" (ISO A4) বাছুন, আর Orientation-এ \"Portrait\" (খাড়া) রাখুন।");
   await new Promise(r=>setTimeout(r,250));
   try{ window.print(); }catch(e){ setStatus("এখানে ছাপার পাতা খোলা যাচ্ছে না। অ্যাপটা Google Chrome-এ খুলে আবার চাপুন।",true); done(); return; }
-  setTimeout(()=>{ if(!matchMedia("print").matches) done(); },60000);
+  setTimeout(()=>{ if(!matchMedia("print").matches) done(); },120000);
 };
 
 /* printing from the browser's own menu (⋮ → Share/Print), not from the app's button: build the pages anyway, so the PDF is the question paper and not one blank page */
 window.addEventListener("beforeprint",()=>{
-  if($("printArea")||!window.PQM_OK) return;
+  const old=$("printArea"); if(old&&Date.now()-Number(old.dataset.at||0)<120000) return; if(old) old.remove(); if(!window.PQM_OK) return;
   try{
     const land=sheetLand(), sheets=buildSheets(true);
-    const area=document.createElement("div"); area.id="printArea"; area.setAttribute("aria-hidden","true"); area.className=land?"pland":"pport"; area.dataset.auto="1";
+    const area=document.createElement("div"); area.id="printArea"; area.setAttribute("aria-hidden","true"); area.className=land?"pland":"pport"; area.dataset.auto="1"; area.dataset.at=String(Date.now());
     sheets.forEach(sh=>{ sh.el.style.position="relative"; sh.el.style.transform="none"; sh.el.style.boxShadow="none"; const w=document.createElement("div"); w.className="pwrap"; w.appendChild(sh.el); area.appendChild(w); });
     document.body.appendChild(area);
     let ps=$("printPage"); if(!ps){ ps=document.createElement("style"); ps.id="printPage"; document.head.appendChild(ps); } ps.textContent="@page{margin:0}";
