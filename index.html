@@ -108,6 +108,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 .pgpick label{font-weight:700;font-size:1rem}
 .pgpick select{font:inherit;font-size:1rem;padding:8px}
 .pgpick .small{width:100%}
+.ownrow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--line);flex-wrap:wrap}
 .doc .mk{float:right;font-weight:700;margin-left:1em;text-indent:0}
 .qbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 6px}
 .qbar .qbmk{display:inline-flex;gap:4px}
@@ -349,6 +350,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
     <input id="lockUser" type="text" name="username" autocomplete="username" value="Pankaj Question Maker" readonly tabindex="-1" aria-hidden="true" style="position:absolute;opacity:0;width:1px;height:1px;pointer-events:none">
     <input id="lockCode" type="password" name="password" placeholder="সদস্য-কোড এখানে পেস্ট করুন" spellcheck="false" autocomplete="current-password" autocapitalize="off" style="font:inherit;font-size:1rem;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)">
     <button class="btn primary" id="lockGo">চালু করুন</button>
+    <button class="btn" id="lockLater" type="button" hidden>✕ পরে বসাব</button>
     <p class="small" id="lockMsg" style="margin:0;color:var(--warn)" aria-live="polite"></p>
   </div>
 </div>
@@ -390,11 +392,13 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
     if(!data){ el.remove(); return; }
     const forever=!data.e||data.e==="0"; let left=Infinity;
     if(!forever){ const end=new Date(+data.e.slice(0,4),+data.e.slice(4,6)-1,+data.e.slice(6,8)), t=String(today()), now=new Date(+t.slice(0,4),+t.slice(4,6)-1,+t.slice(6,8)); left=Math.round((end-now)/864e5); }
-    el.style.color=left<=15?"var(--warn)":"var(--accent)";
-    el.textContent=`${data.n||"সদস্য"}-এর নামে · ${forever?"মেয়াদ চিরকাল":dtxt(data.e)+" পর্যন্ত"}`+(left<=15?` · আর ${bn(Math.max(0,left))} দিন বাকি, নতুন কোড নিয়ে রাখুন`:"");
+    el.style.color=left<=15?"var(--warn)":"var(--accent)"; el.style.cursor="pointer"; el.title="নতুন কোড বসাতে চাপুন";
+    el.onclick=()=>{ if(!window.PQM_OK) return; ov.hidden=false; document.documentElement.style.overflow="hidden"; $l("lockLater").hidden=false; msg("নতুন (রিনিউ) কোড এখানে পেস্ট করে \"চালু করুন\" চাপুন। প্রশ্নপত্র কিছু মুছবে না।"); };
+    el.textContent=`${data.n||"সদস্য"}-এর নামে · ${forever?"মেয়াদ চিরকাল":dtxt(data.e)+" পর্যন্ত"}`+(left<=15?` · আর ${bn(Math.max(0,left))} দিন বাকি, নতুন কোড পেলে এখানে চাপুন`:"");
   }
   window.__pqmBadge=d=>badge(d);
-  const unlock=data=>{window.PQM_OK=true;window.PQM_MEMBER=data||null;ov.hidden=true;document.documentElement.style.overflow="";badge(data);};
+  $l("lockLater").onclick=()=>{ $l("lockLater").hidden=true; ov.hidden=true; document.documentElement.style.overflow=""; msg(""); };
+  const unlock=data=>{$l("lockLater").hidden=true;window.PQM_OK=true;window.PQM_MEMBER=data||null;ov.hidden=true;document.documentElement.style.overflow="";badge(data);};
   const lock=t=>{window.PQM_OK=false;ov.hidden=false;document.documentElement.style.overflow="hidden";msg(t);};
   async function recheck(){
     const c=st.get("pqmMember");
@@ -483,8 +487,22 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
     if(ok){ $o("ownLogin").hidden=true; $o("ownMake").hidden=false; $o("ownMsg").textContent=""; if(window.__pqmBadge) window.__pqmBadge({n:"পঙ্কজবাবু (মালিক)",e:"0"}); showBtn(); list(); }
     else $o("ownMsg").textContent="পাসওয়ার্ড মেলেনি।"; };
   $o("ownLen").onchange=()=>{ $o("ownEndWrap").hidden=$o("ownLen").value!=="d"; };
-  function list(){ const L=JSON.parse(st.get("pqmMembers")||"[]");
-    $o("ownList").innerHTML=L.length?"<b>যাঁদের কোড দিয়েছেন</b><br>"+L.slice(0,50).map(x=>`${esc(x.n)}${x.d?" — যন্ত্র "+esc(x.d):""} — ${esc(show(x.e))} (${esc(x.t)})`).join("<br>"):""; }
+  let renewOf=-1;
+  const endDate=e=>new Date(+e.slice(0,4),+e.slice(4,6)-1,+e.slice(6,8));
+  function list(){ const L=JSON.parse(st.get("pqmMembers")||"[]"), today=ymd(new Date());
+    $o("ownList").innerHTML=L.length?"<b>যাঁদের কোড দিয়েছেন</b>"+L.slice(0,80).map((x,i)=>{ const over=x.e!=="0"&&x.e<today;
+      return `<div class="ownrow"><div><b>${esc(x.n)}</b>${x.d?" · যন্ত্র "+esc(x.d):""}<br><span style="color:${over?"var(--warn)":"inherit"}">${x.e==="0"?"মেয়াদ চিরকাল":(over?"মেয়াদ শেষ ":"")+esc(show(x.e))+(over?"":" পর্যন্ত")}</span> · দেওয়া ${esc(x.t)}</div>
+        <div class="row" style="gap:4px">${x.e==="0"?"":`<button class="btn primary" data-renew="${i}" style="width:auto;padding:5px 10px">🔄 রিনিউ</button>`}<button class="btn" data-drop="${i}" style="padding:5px 10px">✕ বাতিল</button></div></div>`; }).join(""):""; }
+  $o("ownList").addEventListener("click",e=>{
+    const r=e.target.closest("button[data-renew]"), d=e.target.closest("button[data-drop]"); const L=JSON.parse(st.get("pqmMembers")||"[]");
+    if(r){ const x=L[+r.dataset.renew]; if(!x) return;
+      // one more year, counted from the old end date (or from today if it has already run out)
+      const now=new Date(); now.setHours(0,0,0,0); const base=x.e&&x.e!=="0"&&endDate(x.e)>now?endDate(x.e):now; base.setFullYear(base.getFullYear()+1);
+      $o("ownName").value=x.n; $o("ownDev").value=x.d||""; $o("ownLen").value="d"; $o("ownEndWrap").hidden=false;
+      $o("ownEnd").value=`${base.getFullYear()}-${String(base.getMonth()+1).padStart(2,"0")}-${String(base.getDate()).padStart(2,"0")}`;
+      renewOf=+r.dataset.renew; $o("ownGo").click(); return; }
+    if(d){ if(d.dataset.sure!=="1"){ d.dataset.sure="1"; d.textContent="নিশ্চিত? আবার চাপুন"; setTimeout(()=>{ d.dataset.sure=""; d.textContent="✕ বাতিল"; },4000); return; }
+      L.splice(+d.dataset.drop,1); st.set("pqmMembers",JSON.stringify(L)); list(); $o("ownMsg").textContent="তালিকা থেকে সরানো হল। (তাঁর হাতে থাকা কোড মেয়াদ পর্যন্ত চলবে, কোড একবার দিলে ফেরানো যায় না।)"; } });
   $o("ownGo").onclick=async()=>{
     const n=$o("ownName").value.trim(); if(!n){ $o("ownMsg").textContent="আগে নাম লিখুন।"; return; }
     const L=$o("ownLen").value; let e="0";
@@ -501,8 +519,11 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
       $o("ownWa").href="https://wa.me/?text="+encodeURIComponent(`Pankaj Question Maker-এর সদস্য-কোড (${n}, ${show(e)} পর্যন্ত):\n`+code);
       $o("ownMsg").textContent=e==="0"?`${n}-এর কোড তৈরি, মেয়াদ চিরকাল।`:`${n}-এর কোড তৈরি, ${show(e)} পর্যন্ত চলবে।`;
       if(dv) $o("ownMsg").textContent+=` শুধু ${dv} যন্ত্রে চলবে।`; $o("ownDev").value="";
-      const A=JSON.parse(st.get("pqmMembers")||"[]"); A.unshift({n,e,d:dv||"",t:new Date().toLocaleDateString("bn-IN")}); st.set("pqmMembers",JSON.stringify(A.slice(0,500))); list();
-    }catch{ $o("ownMsg").textContent="কোড বানানো গেল না।"; }
+      const A=JSON.parse(st.get("pqmMembers")||"[]"); const wasRenew=renewOf>=0; if(wasRenew) A.splice(renewOf,1); renewOf=-1;
+      A.unshift({n,e,d:dv||"",t:new Date().toLocaleDateString("bn-IN")}); st.set("pqmMembers",JSON.stringify(A.slice(0,500))); list();
+      $o("ownLen").value="12"; $o("ownEndWrap").hidden=true;
+      if(wasRenew){ $o("ownMsg").textContent=`${n}-এর রিনিউ কোড তৈরি, ${show(e)} পর্যন্ত চলবে। এবার "WhatsApp-এ পাঠান" চাপুন।`; $o("ownCode").scrollIntoView({block:"center",behavior:"smooth"}); }
+    }catch{ renewOf=-1; $o("ownMsg").textContent="কোড বানানো গেল না।"; }
   };
   $o("ownCopy").onclick=async()=>{ try{ await navigator.clipboard.writeText($o("ownCode").value); $o("ownMsg").textContent="কোড কপি হয়েছে।"; }catch{ $o("ownCode").select(); } };
   $o("ownForget").onclick=()=>{ st.del("pqmOwner"); showBtn(); closePanel(); setTimeout(()=>location.reload(),200); };
@@ -545,7 +566,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২০ নভেম্বর ৪ (খাড়া কাগজে দুই কলাম)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২২ নভেম্বর ২ (রিনিউ বোতাম, আগেভাগে নতুন কোড)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
