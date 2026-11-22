@@ -84,6 +84,17 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 .doc p.opt{padding-left:1.7em}
 .doc p.or{text-align:center;font-weight:700;margin:.08em 0}
 .doc h2{font-size:1.12em;font-weight:700;margin:.35em 0 .3em;text-align:center}
+.mktally{margin:0 0 8px}
+.mktally #mkSum{width:100%;text-align:left;border:1.5px solid #2e7d32;background:#e8f5e9;color:#1b5e20;border-radius:10px;padding:8px 12px;font:inherit;font-weight:700;cursor:pointer}
+.mktally.bad #mkSum{border-color:#c62828;background:#ffebee;color:#b71c1c}
+.mktally.none #mkSum{border-color:#999;background:#f5f5f5;color:#333}
+#mkList{border:1px solid #ccc;border-top:0;border-radius:0 0 10px 10px;background:#fff;padding:6px 10px;font-size:.92rem}
+#mkList .mr{display:flex;justify-content:space-between;gap:10px;padding:5px 2px;border-bottom:1px dashed #ddd;cursor:pointer}
+#mkList .mr span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#mkList .mr b{white-space:nowrap}
+#mkList .mn{color:#b71c1c;font-size:.85rem;padding:3px 2px}
+#mkList .mt{display:flex;justify-content:space-between;padding:6px 2px 2px;font-weight:700}
+@media print{.mktally{display:none!important}}
 .doc h3.sec{font-size:1em;font-weight:700;margin:.6em 0 .25em;padding-bottom:1px;border-bottom:1px solid #999}
 .eqeasy{display:flex;flex-direction:column;gap:6px;padding:8px;border:1.5px solid var(--accent);border-radius:9px;margin-bottom:6px}
 .eqfields{display:flex;flex-wrap:wrap;gap:6px 10px}
@@ -566,7 +577,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২২ নভেম্বর ২ (রিনিউ বোতাম, আগেভাগে নতুন কোড)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২৩ নভেম্বর (নম্বরের হিসাব মেলানো)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -1008,6 +1019,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
           <span class="row" style="gap:6px;flex-wrap:nowrap;flex:1;min-width:240px"><input class="libin" id="webQ" placeholder="ছবি খুঁজুন, যেমন: ত্রিভুজ চিত্র" autocomplete="off" style="flex:1;min-width:0;width:auto"><button class="btn" id="webGo">🔎 Google-এ খুঁজুন</button></span>
           <button class="btn" id="clipPut">📋 কপি করা ছবি বসান</button>
         </div>
+        <div class="mktally" id="mkTally" hidden><button type="button" id="mkSum"></button><div id="mkList" hidden></div></div>
         <div class="stage" id="stage">
           <div class="sheet" id="sheet">
             <div class="doc" id="doc" contenteditable="true" spellcheck="false"></div>
@@ -23031,8 +23043,69 @@ function refit(){
   pageList.forEach((p,i)=>{if(!i)return;const d=document.createElement("div");d.className="brk";d.style.top=(MG().t+p[0].offsetTop-3)+"px";d.innerHTML=`<i>পাতা ${bn(i+1)}</i>`;g.appendChild(d);});
   scaleEdit();
   if(!$("viewPane").hidden) buildPreview();
+  try{marksTally();}catch(e){}
   if(typeof scheduleSave==="function") scheduleSave();
 }
+
+/* ---- নম্বরের হিসাব (মোট নম্বর বনাম পূর্ণমান) ---- */
+function mkNum(t){
+  t=String(t||"").replace(/[০-৯]/g,d=>"০১২৩৪৫৬৭৮৯".indexOf(d)).replace(/½/g,".5").replace(/\s+/g,"");
+  if(t.includes("=")) t=t.slice(t.lastIndexOf("=")+1);
+  t=t.replace(/^[(\[]+|[)\]]+$/g,"");
+  if(!/^[\d.]+(?:[×xX*][\d.]+)?(?:\+[\d.]+(?:[×xX*][\d.]+)?)*$/.test(t)) { const m=t.match(/^[\d.]+/); return m&&!isNaN(+m[0])?+m[0]:null; }
+  return t.split("+").reduce((a,x)=>a+x.split(/[×xX*]/).reduce((p,y)=>p*(+y),1),0);
+}
+function mkOf(el){ const m=el.querySelector(":scope > .mk:not(.rbox)"); return m?mkNum(m.textContent):null; }
+function mkTitle(el){ const c=el.cloneNode(true); c.querySelectorAll(".mk,mjx-container,svg,.blank,.box").forEach(x=>x.remove()); const t=c.textContent.replace(/\s+/g," ").trim(); return t.length>34?t.slice(0,34)+"…":t||"—"; }
+const isAlt=el=>/^\s*(অথবা|Or\b|OR\b)/.test(mkTitle(el));
+function marksTally(){
+  const box=$("mkTally"); if(!box) return;
+  const doc=$("doc"), groups=[]; let g=null, q=null, altNext=false, skip=false;
+  const newG=(el,title,val)=>{ g={el,title,val,qs:[]}; groups.push(g); };
+  for(const e of doc.children){
+    if(e.matches(".hdr")) continue;
+    if(e.matches("h3.sec")){ newG(e,mkTitle(e),mkOf(e)); q=null; skip=false; altNext=false; continue; }
+    if(e.matches("p.or")){ altNext=true; continue; }
+    if(e.matches("p.q")||(e.matches("p:not(.opt)")&&mkOf(e)!==null)){
+      if(altNext||isAlt(e)){ altNext=false; skip=true; q=null; continue; }
+      skip=false; if(!g) newG(null,"প্রশ্ন",null);
+      q={el:e,val:mkOf(e),sub:0,hasSub:false}; g.qs.push(q); continue;
+    }
+    if(e.matches("p.opt")){
+      if(skip) continue;
+      if(isAlt(e)){ skip=true; continue; }
+      const v=mkOf(e); if(v!==null&&q){ q.sub+=v; q.hasSub=true; }
+    }
+  }
+  let total=0, missing=[]; const rows=[];
+  for(const G0 of groups){
+    const qsum=G0.qs.reduce((a,x)=>a+(x.val!==null?x.val:x.hasSub?x.sub:0),0);
+    const t=G0.val!==null?G0.val:qsum;
+    if(G0.val===null) G0.qs.forEach(x=>{ if(x.val===null&&!x.hasSub) missing.push(x.el); });
+    if(G0.val===null&&!qsum&&!G0.qs.length) continue;
+    total+=t; rows.push({el:G0.el||(G0.qs[0]&&G0.qs[0].el),title:G0.title,t,note:G0.val!==null&&qsum&&Math.abs(qsum-G0.val)>1e-9?`ভেতরের প্রশ্নে লেখা নম্বরের যোগ ${bn(+qsum.toFixed(2))}, মাথায় লেখা ${bn(G0.val)} ধরা হল`:""});
+  }
+  total=+total.toFixed(2);
+  const fm=mkNum((($("hFM")&&$("hFM").value)||"").trim().split(/[\s(]/)[0]);
+  if(!rows.length&&fm===null){ box.hidden=true; return; }
+  box.hidden=false;
+  let msg, cls="";
+  if(fm===null){ msg=`ℹ️ মোট নম্বর ${bn(total)} (পূর্ণমান বসানো নেই)`; cls="none"; }
+  else if(Math.abs(total-fm)<1e-9){ msg=`✅ মোট নম্বর ${bn(total)} = পূর্ণমান ${bn(fm)}`; }
+  else { const d=+Math.abs(fm-total).toFixed(2); msg=`⚠️ মোট নম্বর ${bn(total)}, পূর্ণমান ${bn(fm)} — ${bn(d)} ${total<fm?"কম":"বেশি"}`; cls="bad"; }
+  if(missing.length) msg+=` · ${bn(missing.length)}টি প্রশ্নে নম্বর নেই`;
+  box.className="mktally"+(cls?" "+cls:"");
+  $("mkSum").textContent=msg+($("mkList").hidden?"  ▾":"  ▴");
+  const L=$("mkList"); L.innerHTML="";
+  const esc=x=>x.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+  rows.forEach(r=>{ const d=document.createElement("div"); d.className="mr"; d.innerHTML=`<span>${esc(r.title)}</span><b>${bn(+r.t.toFixed(2))}</b>`; d.onclick=()=>mkGo(r.el); L.appendChild(d);
+    if(r.note){ const n=document.createElement("div"); n.className="mn"; n.textContent="↳ "+r.note; L.appendChild(n);} });
+  missing.forEach(el=>{ const d=document.createElement("div"); d.className="mn"; d.style.cursor="pointer"; d.textContent="⚠️ নম্বর নেই: "+mkTitle(el); d.onclick=()=>mkGo(el); L.appendChild(d); });
+  const t=document.createElement("div"); t.className="mt"; t.innerHTML=`<span>মোট</span><span>${bn(total)}${fm!==null?" / পূর্ণমান "+bn(fm):""}</span>`; L.appendChild(t);
+}
+function mkGo(el){ if(!el) return; el.scrollIntoView({block:"center",behavior:"smooth"}); el.style.transition="background .3s"; el.style.background="#fff59d"; setTimeout(()=>el.style.background="",1500); }
+$("mkSum").onclick=()=>{ $("mkList").hidden=!$("mkList").hidden; marksTally(); };
+$("hFM").addEventListener("input",()=>marksTally());
 let rt; function refitSoon(){clearTimeout(rt);rt=setTimeout(refit,400);}
 function scaleEdit(){
   const w=$("stage").clientWidth||G.pageW, s=Math.min(1,w/G.pageW), sh=$("sheet");
