@@ -579,7 +579,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২৩ নভেম্বর ২ (নম্বরের হিসাব: A B C ভাগ, (১) লেখা নম্বর)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২৩ নভেম্বর ৩ (নম্বরের হিসাব ঠিক করা)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -23064,6 +23064,8 @@ function mkInline(el){ // marks written inside the text itself: "... (1)", "... 
   const t=mkTitleFull(el).replace(/[০-৯]/g,d=>"০১২৩৪৫৬৭৮৯".indexOf(d));
   let m=t.match(/(\(?\s*\d+(?:\s*\+\s*\d+)*\s*\)?\s*[×xX*]\s*\d+\s*=\s*\d+(?:\.\d+)?)\s*[.।]?\s*$/); if(m) return mkNum(m[1]);
   m=t.match(/[(\[]\s*(\d{1,2}(?:\.5)?)\s*(?:marks?|নম্বর)?\s*[)\]]\s*[.।]?\s*$/i); if(m&&+m[1]<=50) return +m[1];
+  const c=el.cloneNode(true); c.querySelectorAll(".mk,mjx-container,svg").forEach(x=>x.remove());
+  m=c.textContent.replace(/[০-৯]/g,d=>"০১২৩৪৫৬৭৮৯".indexOf(d)).match(/\S[ \t\u00a0\u2003]{3,}(\d{1,2}(?:\.5)?)\s*$/); if(m&&+m[1]<=50) return +m[1]; // "...moral to it:            10"
   return null;
 }
 function mkTitleFull(el){ const c=el.cloneNode(true); c.querySelectorAll(".mk,mjx-container,svg,.blank,.box").forEach(x=>x.remove()); return c.textContent.replace(/\s+/g," ").trim(); }
