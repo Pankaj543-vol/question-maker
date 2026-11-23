@@ -158,7 +158,9 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 .doc .box{display:inline-block;width:.9em;height:.9em;border:1.4px solid #111;box-sizing:border-box;vertical-align:-.12em;margin:0 .2em;text-indent:0}
 .doc .mk.rbox{font-weight:400}
 .doc .wlines{margin:.15em 0 .45em}
-.doc .wlines div{border-bottom:1px solid #666}
+.doc .wlines>div:not(.wtx){border-bottom:1px solid #666}
+.doc .wlines{position:relative}
+.doc .wlines>.wtx{position:absolute;left:0;right:0;top:0;bottom:0;line-height:var(--wl,1.9em);padding:calc(var(--wl,1.9em)*.5 - .78em) .2em 0;overflow:hidden;white-space:pre-wrap;word-wrap:break-word;outline:none;cursor:text;box-sizing:border-box}
 .doc table.tbl td{min-width:2.5em;height:1.5em}
 #doc td.cur{position:relative}
 .tgrip{display:none}
@@ -217,13 +219,14 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 /* boxes and lines you can tap, see and delete */
 #doc .box,#doc .blank,#doc .mk.rbox,#doc .wlines{cursor:pointer}
 #doc .wlines{outline:1px dashed rgba(31,111,92,.35);outline-offset:3px}
+#doc .wlines.wlfull{outline:2px solid #c62828}
 #doc .pick{outline:2.5px solid #1f6f5c!important;outline-offset:3px;background-color:rgba(31,111,92,.15)}
 #doc .box.pick,#doc .blank.pick,#doc .wlines.pick{position:relative}
 .pgrip{display:none}
 #doc .pick > .pgrip{display:block;position:absolute;right:-13px;bottom:-13px;width:24px;height:24px;border-radius:50%;background:#1f6f5c;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);cursor:nwse-resize;touch-action:none;z-index:6;box-sizing:border-box}
 #doc .pick > .pgrip::after{content:"";position:absolute;inset:-12px}
 @media print{.pgrip{display:none!important}}
-.doc .wlines div{height:var(--wl,1.9em)}
+.doc .wlines>div:not(.wtx){height:var(--wl,1.9em)}
 .sheetbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(10px + env(safe-area-inset-bottom,0px));width:min(96vw,640px);max-height:45vh;overflow:auto;z-index:65;box-shadow:0 8px 28px rgba(0,0,0,.28);box-sizing:border-box}
 .libbox{display:flex;flex-direction:column;gap:8px}
 .libin{font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--fg);min-width:0;width:100%;box-sizing:border-box}
@@ -586,7 +589,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২৩ নভেম্বর ৮ (এক বোতামে সব অপশন পাশাপাশি)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২৩ নভেম্বর ৯ (উত্তরের দাগে লেখা যায়)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -23197,6 +23200,23 @@ $("qbStack").onclick=()=>{
   lastBlock=null; refit(); setStatus(`${bn(ps.length)}টি প্রশ্নের অপশন আবার নিচে নিচে করা হল।`);
 };
 ["qbSide","qbStack"].forEach(id=>{ const b=$(id); b.addEventListener("pointerdown",e=>e.preventDefault()); b.addEventListener("mousedown",e=>e.preventDefault()); });
+
+/* ---- উত্তরের দাগের ওপর লেখা ---- */
+function wlType(p,e){
+  let w=p.querySelector(":scope > .wtx");
+  const inText=w&&e.target.closest(".wtx")===w&&w.textContent.length;
+  if(pickEl!==p) openPick(p);
+  if(!w){ w=document.createElement("div"); w.className="wtx"; w.contentEditable="true"; w.spellcheck=false; p.appendChild(w); }
+  if(inText) return; // the browser puts the cursor where the finger is
+  e.preventDefault(); try{w.focus({preventScroll:true});}catch{w.focus();}
+  const r=document.createRange(); r.selectNodeContents(w); r.collapse(false); const sl=getSelection(); sl.removeAllRanges(); sl.addRange(r);
+  setStatus("দাগের ওপর লিখুন। দাগ ভরে গেলে লেখা নিজে পরের দাগে নামবে।");
+}
+document.addEventListener("input",e=>{ const w=e.target.closest&&e.target.closest("#doc .wtx"); if(!w) return;
+  const full=w.scrollHeight>w.clientHeight+2; w.parentNode.classList.toggle("wlfull",full);
+  if(full) setStatus("দাগ ভরে গেছে, বাকি লেখা দেখা যাবে না। \"＋ একটা দাগ বাড়ান\" চাপুন।",true);
+  if(typeof scheduleSave==="function") scheduleSave(); },true);
+document.addEventListener("keydown",e=>{ const w=e.target.closest&&e.target.closest("#doc .wtx"); if(!w) return; if(e.key==="Enter"){ e.preventDefault(); document.execCommand("insertText",false,"\n"); } },true);
 let rt; function refitSoon(){clearTimeout(rt);rt=setTimeout(refit,400);}
 function scaleEdit(){
   const w=$("stage").clientWidth||G.pageW, s=Math.min(1,w/G.pageW), sh=$("sheet");
@@ -24080,7 +24100,7 @@ function sizeUI(el){
   if(t!==el) t.classList.add("pick");
   g.addEventListener("click",e=>{ e.preventDefault(); e.stopPropagation(); });
   g.addEventListener("pointerdown",e=>{ e.preventDefault(); e.stopPropagation(); snapshot(); try{g.setPointerCapture(e.pointerId);}catch{}
-    const s0=curSize(t), em=emOf(t), x0=e.clientX, y0=e.clientY, n=Math.max(1,t.querySelectorAll(":scope > div").length);
+    const s0=curSize(t), em=emOf(t), x0=e.clientX, y0=e.clientY, n=Math.max(1,t.querySelectorAll(":scope > div:not(.wtx)").length);
     const mv=ev=>{ const dx=(ev.clientX-x0)/em, dy=(ev.clientY-y0)/em;
       if(k==="wl") setSize(t,null,s0.h+dy/n); else setSize(t,s0.w+dx,k==="box"?s0.h+dy:null); refitSoon(); };
     const up=()=>{ g.removeEventListener("pointermove",mv); g.removeEventListener("pointerup",up); g.removeEventListener("pointercancel",up); refit(); };
@@ -24101,8 +24121,8 @@ $("pickDone").onclick=closePick;
 $("pickDel").onclick=()=>{ if(!pickEl) return; snapshot(); const n=pickEl.nextSibling; if(n&&n.nodeType===3&&n.nodeValue.startsWith("​")) n.nodeValue=n.nodeValue.slice(1);
   const what=pickWhat(pickEl); pickEl.remove(); pickEl=null; $("pickTools").hidden=true; refit(); setStatus(what+" মোছা হল। ভুল হলে \"↶ ফিরিয়ে আনুন\" চাপুন।"); };
 $("pickLen").addEventListener("click",e=>{ const b=e.target.closest("button[data-len]"); if(!b||!pickEl) return; snapshot(); pickEl.dataset.len=b.dataset.len; pickEl.style.width=""; refitSoon(); });
-$("pickLinePlus").onclick=()=>{ if(!pickEl) return; snapshot(); const n=Math.min(20,Number(pickEl.dataset.n)+1); pickEl.dataset.n=n; pickEl.innerHTML="<div></div>".repeat(n); sizeUI(pickEl); $("pickName").textContent="বাছা হয়েছে: "+pickWhat(pickEl); refit(); };
-$("pickLineMinus").onclick=()=>{ if(!pickEl) return; const n=Number(pickEl.dataset.n)-1; if(n<1){ $("pickDel").click(); return; } snapshot(); pickEl.dataset.n=n; pickEl.innerHTML="<div></div>".repeat(n); sizeUI(pickEl); $("pickName").textContent="বাছা হয়েছে: "+pickWhat(pickEl); refit(); };
+$("pickLinePlus").onclick=()=>{ if(!pickEl) return; snapshot(); const n=Math.min(20,Number(pickEl.dataset.n)+1); pickEl.dataset.n=n; { const w=pickEl.querySelector(":scope > .wtx"); pickEl.innerHTML="<div></div>".repeat(n); if(w) pickEl.appendChild(w); } sizeUI(pickEl); $("pickName").textContent="বাছা হয়েছে: "+pickWhat(pickEl); refit(); };
+$("pickLineMinus").onclick=()=>{ if(!pickEl) return; const n=Number(pickEl.dataset.n)-1; if(n<1){ $("pickDel").click(); return; } snapshot(); pickEl.dataset.n=n; { const w=pickEl.querySelector(":scope > .wtx"); pickEl.innerHTML="<div></div>".repeat(n); if(w) pickEl.appendChild(w); } sizeUI(pickEl); $("pickName").textContent="বাছা হয়েছে: "+pickWhat(pickEl); refit(); };
 $("doc").addEventListener("click",e=>{
   if(e.target.closest(".lab")) return;
   if(placing&&figEl){ const fw=e.target.closest("figure.fi")===figEl?figFw(figEl):null;
@@ -24111,6 +24131,7 @@ $("doc").addEventListener("click",e=>{
     placing=null; figEl.classList.remove("placing"); $("figedit").hidden=false; setStatus("বসানো বাতিল হল। ছবির ওপরেই ট্যাপ করতে হবে।",true); return; }
   const m=e.target.closest("[data-tex]"); if(m){e.preventDefault();closePick();openEq(m);return;}
   const p=e.target.closest("#doc .mk.rbox")||(e.target.closest("#doc .ov")?null:e.target.closest("#doc .box,#doc .blank,#doc .wlines"));
+  if(p&&p.classList.contains("wlines")){ wlType(p,e); return; }
   if(p){e.preventDefault();openPick(p);return;}
   closePick();
   const f=e.target.closest("figure.fi"); if(f){e.preventDefault();openFig(f);}
@@ -24138,7 +24159,7 @@ function blockOf(el){
   if(el.classList.contains("live")) return [];
   if(el.classList.contains("hdr")) return [{hdr:true}];
   if(el.dataset.tex!==undefined) return [{eq:el.dataset.tex}];
-  if(el.classList.contains("wlines")) return [{lines:Math.max(1,Number(el.dataset.n)||1)}];
+  if(el.classList.contains("wlines")){ const w=el.querySelector(":scope > .wtx"); return [{lines:Math.max(1,Number(el.dataset.n)||1),wtext:w?w.innerText.replace(/\s+$/,""):""}]; }
   if(el.nodeName==="TABLE") return [{table:[...el.rows].map(tr=>[...tr.cells].map(td=>{const r=[];walk(td,false,r);return r.filter(x=>x.eq===undefined&&!x.br);}))}];
   if(el.nodeName==="FIGURE"){const img=el.querySelector("img"),fw=el.querySelector(".fw")||img;return img&&img.src.startsWith("data:")?[{img:flatMap.get(el)||img.src,w:(fw&&fw.offsetWidth)||300,h:(fw&&fw.offsetHeight)||200,align:el.dataset.align||"c"}]:[];}
   const runs=[]; walk(el,false,runs);
@@ -24235,7 +24256,7 @@ $("copy").onclick=async()=>{
     if(b.hdr){if(hv("hSchool"))lines.push(hv("hSchool"));if(examLine())lines.push(examLine());const t=[hv("hClass")&&"Class – "+hv("hClass"),hv("hSub")&&"Sub – "+hv("hSub"),hv("hTime")&&"Time: "+hv("hTime"),hv("hFM")&&"F.M. – "+hv("hFM")].filter(Boolean);if(t.length)lines.push(t.join("    "));return;}
     if(b.eq!==undefined){lines.push(lin(b.eq));return;}
     if(b.img){lines.push("[চিত্র]");return;}
-    if(b.lines){for(let i=0;i<b.lines;i++)lines.push("______________________________________");return;}
+    if(b.lines){const t=(b.wtext||"").split("\n").filter(x=>x.trim());for(let i=0;i<b.lines;i++)lines.push(t[i]!==undefined?t[i]+(i===b.lines-1&&t.length>b.lines?" "+t.slice(b.lines).join(" "):""):"______________________________________");return;}
     const R=rs=>rs.map(r=>r.br?"\n":r.math!==undefined?lin(r.math):r.blank?{s:"_____",m:"__________",l:"________________"}[r.blank]:r.box?"☐":r.text).join("");
     if(b.table){b.table.forEach(r=>lines.push(r.map(R).join("\t")));return;}
     lines.push(R(b.runs)+(b.marks?"    "+R(b.marks):""));
@@ -24288,7 +24309,7 @@ $("docx").onclick=async()=>{
   function toDocx(b){
     if(b.hdr) return header();
     if(b.eq!==undefined) return [new D.Paragraph({alignment:C,spacing:{...sp,after:40},children:[eqObj(b.eq,true)]})];
-    if(b.lines) return Array.from({length:b.lines},(_,i)=>new D.Paragraph({spacing:{line:240,before:320,after:0},border:{bottom:{style:D.BorderStyle.SINGLE,size:4,color:i%2?"606060":"666666",space:1}},children:[new D.TextRun({text:"\u00A0",size:4})]}));
+    if(b.lines){ const t=(b.wtext||"").split("\n").filter(x=>x.trim()); return Array.from({length:b.lines},(_,i)=>new D.Paragraph({spacing:{line:240,before:t[i]?120:320,after:0},border:{bottom:{style:D.BorderStyle.SINGLE,size:4,color:i%2?"606060":"666666",space:1}},children:[t[i]?new D.TextRun({text:t[i]+(i===b.lines-1&&t.length>b.lines?" "+t.slice(b.lines).join(" "):"")}):new D.TextRun({text:"\u00A0",size:4})]})); }
     if(b.img){const k=Math.min(1,cw()/b.w),tr={width:Math.round(b.w*k),height:Math.round(b.h*k)};
       if(b.align==="l"||b.align==="r") return [new D.Paragraph({spacing:{...sp},children:[new D.ImageRun({data:b64(b.img),transformation:tr,floating:{
         horizontalPosition:{relative:D.HorizontalPositionRelativeFrom.COLUMN,align:b.align==="l"?D.HorizontalPositionAlign.LEFT:D.HorizontalPositionAlign.RIGHT},
