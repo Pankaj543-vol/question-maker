@@ -580,7 +580,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২৩ নভেম্বর ৪ (নম্বরের হিসাব: মোটা করা প্রশ্নও গোনে)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২৩ নভেম্বর ৫ (নম্বরের হিসাব: ৬ নম্বর প্রশ্নও গোনে)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -23077,8 +23077,9 @@ function marksTally(){
   const doc=$("doc"), groups=[]; let g=null, q=null, sh=null, altNext=false, skip=false;
   const newG=(el,title,val)=>{ g={el,title,val,qs:[]}; groups.push(g); };
   const valOf=e=>{ const v=mkOf(e); return v!==null?v:mkInline(e); };
-  for(const e of doc.children){
-    if(e.matches(".hdr")||!e.matches("h3,p")) continue;
+  for(const e of doc.querySelectorAll(":scope > h3, :scope > p, :scope > div:not(.hdr):not(.wlines):not(.fig) p")){
+    if(e.closest("table,.hdr")) continue;
+    const numLine=!e.matches("p.q,h3")&&/^(?:Q\.?\s*)?[0-9০-৯]{1,3}\s*[.।]\s*\S/.test(mkTitleFull(e)); // "6. Develop a story…" not marked as a question
     const qHead=e.matches("h3.sec")&&QNUM.test(mkTitleFull(e)); // a numbered question that was made a heading, e.g. "4. A. Fill in…"
     if(e.matches("h3.sec")&&!qHead){ newG(e,mkTitle(e),mkOf(e)); q=null; sh=null; skip=false; altNext=false; continue; }
     if(e.matches("p.or")){ altNext=true; continue; }
@@ -23086,7 +23087,7 @@ function marksTally(){
       if(skip) continue;
       if(sh&&sh.val===null) sh.val=v; else if(q&&q.val===null&&!q.subs.length) q.val=v; else if(sh) sh.items+=v; else if(q) q.extra+=v;
       continue; } }
-    if(qHead||e.matches("p.q")||(!q&&e.matches("p:not(.opt)")&&mkOf(e)!==null)){
+    if(qHead||numLine||e.matches("p.q")||(!q&&e.matches("p:not(.opt)")&&mkOf(e)!==null)){
       if(altNext||isAlt(e)){ altNext=false; skip=true; continue; }
       skip=false; if(!g) newG(null,"প্রশ্ন",null);
       const body=mkTitleFull(e).replace(/^(?:Q\.?\s*)?(?:\(\s*[0-9০-৯]{1,3}\s*\)|[0-9০-৯]{1,3}\s*[.।)])\s*/,"");
