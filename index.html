@@ -586,7 +586,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২৩ নভেম্বর ৭ (অপশন পাশাপাশি বোতাম)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২৩ নভেম্বর ৮ (এক বোতামে সব অপশন পাশাপাশি)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -969,7 +969,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
           <button class="btn" id="qbSub">＋ ছোট প্রশ্ন</button>
           <button class="btn" id="qbOpt">＋ অপশন</button>
           <button class="btn" id="qbSide" title="নিচে নিচে লেখা a b c d এক লাইনে বা দুই লাইনে">⇔ অপশন পাশাপাশি</button>
-          <button class="btn" id="qbStack" title="পাশাপাশি অপশন আবার নিচে নিচে">⇕ অপশন নিচে নিচে</button>
+          <button class="btn" id="qbStack" hidden>⇕ অপশন নিচে নিচে</button>
           <span class="qbmk"><input id="qbMkV" inputmode="text" placeholder="নম্বর: 2 বা 1x5" autocomplete="off"><button class="btn" id="qbMk">নম্বর বসান</button></span>
           <label class="small">ধাঁচ <select id="qfMain" aria-label="মূল প্রশ্নের নম্বর"><option>1.</option><option>১।</option><option>(1)</option></select></label>
           <select id="qfSub" aria-label="ছোট প্রশ্নের নম্বর"><option>(i)</option><option>(ক)</option><option>(a)</option></select>
@@ -23030,6 +23030,7 @@ function refit(){
   applyGeometry();
   const doc=$("doc"), n=wanted();
   const count=pt=>{doc.style.fontSize=pt+"pt";try{layoutOpts();}catch(e){}return paginate().length;};
+  try{optBtnLabel();}catch(e){}
   let note="";
   if(n===0){fontPt=G.auto;count(fontPt);}
   else{
@@ -23170,16 +23171,11 @@ function layoutOpts(){
     p.classList.remove("o1","o2","o3","o4"); p.classList.add("o"+c);
   });
 }
-function optScopeKids(){
-  const d=$("doc"), kids=[...d.children]; const sel=getSelection();
-  if(sel&&sel.rangeCount&&!sel.isCollapsed&&d.contains(sel.anchorNode)){ const r=sel.getRangeAt(0); return kids.filter(k=>r.intersectsNode(k)); }
-  if(!lastBlock||!d.contains(lastBlock)) return null;
-  let i=kids.indexOf(lastBlock); if(i<0) return null;
-  if(isOptLine(kids[i])||kids[i].matches("p.opts")){ let a=i,b=i; while(a>0&&isOptLine(kids[a-1]))a--; while(b<kids.length-1&&isOptLine(kids[b+1]))b++; return kids.slice(a,b+1); }
-  let b=i+1; while(b<kids.length&&isOptLine(kids[b]))b++; return kids.slice(i+1,b+1);
-}
+function optScopeKids(){ return [...$("doc").children]; } // one button: the whole paper
+function stackedRuns(){ let n=0,cur=0; for(const e of $("doc").children){ if(isOptLine(e)) cur++; else { if(cur>=2&&cur<=8) n++; cur=0; } } if(cur>=2&&cur<=8) n++; return n; }
+function optBtnLabel(){ const b=$("qbSide"); if(!b) return; const side=stackedRuns()===0&&$("doc").querySelector("p.opts"); b.textContent=side?"⇕ অপশন নিচে নিচে":"⇔ অপশন পাশাপাশি"; b.title=side?"সব অপশন আবার নিচে নিচে":"সব প্রশ্নের a b c d পাশাপাশি"; }
 $("qbSide").onclick=()=>{
-  if(needOwnPaper()) return; const sc=optScopeKids();
+  if(needOwnPaper()) return; if(!stackedRuns()&&$("doc").querySelector("p.opts")){ $("qbStack").onclick(); return; } const sc=optScopeKids();
   if(!sc){ setStatus("আগে যে প্রশ্নের অপশন পাশাপাশি করবেন, তার লেখায় একবার ট্যাপ করুন। সবগুলো একসঙ্গে করতে আগে \"☑ সব প্রশ্ন বাছুন\" চাপুন।",true); return; }
   const runs=[]; let cur=[];
   for(const e of sc){ if(isOptLine(e)) cur.push(e); else { if(cur.length>=2) runs.push(cur); cur=[]; } }
@@ -23190,7 +23186,7 @@ $("qbSide").onclick=()=>{
   ok.forEach(r=>{ const p=document.createElement("p"); p.className="opt opts";
     r.forEach(l=>{ const s=document.createElement("span"); s.className="oc"; while(l.firstChild) s.appendChild(l.firstChild); while(s.lastChild&&s.lastChild.nodeName==="BR") s.lastChild.remove(); s.appendChild(document.createTextNode(" ")); p.appendChild(s); });
     r[0].replaceWith(p); r.slice(1).forEach(l=>l.remove()); });
-  lastBlock=null; refit(); setStatus(`${bn(ok.length)}টি প্রশ্নের অপশন পাশাপাশি করা হল। আগের মতো চাইলে "↶ ফিরিয়ে আনুন" বা "⇕ অপশন নিচে নিচে" চাপুন।`);
+  lastBlock=null; refit(); setStatus(`${bn(ok.length)}টি প্রশ্নের অপশন পাশাপাশি করা হল। আগের মতো চাইলে একই বোতাম "⇕ অপশন নিচে নিচে" চাপুন।`);
 };
 $("qbStack").onclick=()=>{
   if(needOwnPaper()) return; const sc=optScopeKids();
