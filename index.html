@@ -589,7 +589,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২৫ নভেম্বর (অক্ষরের ওপরে-নিচে লেখা)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২৫ নভেম্বর ২ (সংখ্যার মাথায় ঘাত)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -23879,7 +23879,7 @@ function symShow(inEq){
 $("symBtn").onclick=()=>{ const b=$("symboard"); if(!b.hidden&&!$("eqedit").contains(b)){b.hidden=true;return;} symShow(false); };
 $("eqSym").onclick=()=>{ const b=$("symboard"); if(!b.hidden&&$("eqedit").contains(b)){b.hidden=true;return;} symShow(true); $("eqtex").focus(); };
 function eqTo(pos){const t=$("eqtex");t.focus();t.setSelectionRange(pos,pos);}
-const fillHole=(tex,x)=>{ if(/^\\(?:over|under)set/.test(tex)){ const k=tex.lastIndexOf("{}"); return tex.slice(0,k)+"{"+x+"}"+tex.slice(k+2); } return tex.replace("{}","{"+x+"}"); }; // over/under: the chosen letter is the middle
+const fillHole=(tex,x)=>{ if(/^[\^_]/.test(tex)) return x+tex; /* power or small-below: the chosen "5" stays the base, 5^{} */ if(/^\\(?:over|under)set/.test(tex)){ const k=tex.lastIndexOf("{}"); return tex.slice(0,k)+"{"+x+"}"+tex.slice(k+2); } return tex.replace("{}","{"+x+"}"); }; // over/under: the chosen letter is the middle
 function eqInsert(tex){
   const t=$("eqtex"), s=t.selectionStart??t.value.length, e=t.selectionEnd??s;
   const before=t.value.slice(0,s), after=t.value.slice(e), picked=t.value.slice(s,e);
@@ -23967,6 +23967,7 @@ function insertText(txt){ // a plain character straight into the question text, 
 }
 function symPut([label,tex,uni]){
   if(symInEq()){ eqInsert(tex); return; }
+  if(uni&&/^[\^_]/.test(tex)&&lastRange&&!lastRange.collapsed&&$("doc").contains(lastRange.commonAncestorContainer)){ lastRange.collapse(false); } // "5" chosen + ² → 5², not ²
   if(uni){ insertText(uni); return; }
   // words chosen in the text + a structure: the words go inside it (e.g. underline a word)
   const r=lastRange&&!lastRange.collapsed&&$("doc").contains(lastRange.commonAncestorContainer)?lastRange.cloneRange():null;
