@@ -589,7 +589,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২৩ নভেম্বর ৯ (উত্তরের দাগে লেখা যায়)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২৫ নভেম্বর (অক্ষরের ওপরে-নিচে লেখা)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -23846,6 +23846,7 @@ const SYMS=[
  ["ভগ্নাংশ ও মূল",[["ক⁄খ","\\frac{}{}",""],["ক খ⁄গ  মিশ্র","{}\\frac{}{}",""],["√","\\sqrt{}",""],["∛","\\sqrt[3]{}",""],["ⁿ√","\\sqrt[]{}",""],["½","\\frac{1}{2}","½"],["¼","\\frac{1}{4}","¼"],["¾","\\frac{3}{4}","¾"],["ক:খ","{}:{}",""]]],
  ["ঘাত ও নিচে ছোট",[["x²","^{2}","²"],["x³","^{3}","³"],["xⁿ","^{}",""],["x₂","_{}",""],["xₐᵇ","_{}^{}",""],["eˣ","e^{}",""],["10ⁿ","10^{}",""],["x⁻¹","^{-1}","⁻¹"],["′","^{\\prime}","′"]]],
  ["দাগ: অক্ষরের নিচে / ওপরে (আগে লেখা বেছে নিলে সেটাতেই দাগ পড়বে)",[["A̲B̲  নিচে দাগ","\\underline{}",""],["A̅B̅  ওপরে দাগ","\\overline{}",""],["A̲̅B̲̅  ওপরে-নিচে দুটোই","\\overline{\\underline{}}",""]]],
+ ["অক্ষরের ওপরে / নিচে লেখা (আগে অক্ষরটা বেছে নিলে সেটাই মাঝে বসবে)",[["ˢZ  ওপরে লেখা","\\overset{}{}",""],["Zₛ  নিচে লেখা","\\underset{}{}",""],["ˢZₓ  ওপরে-নিচে দুটোই","\\underset{}{\\overset{}{}}",""]]],
  ["বীজগণিত",[["|x|","\\left| {} \\right|",""],["x̄","\\bar{}",""],["f(x)","f(x)",""],["≢","\\not\\equiv ","≢"],["⇒","\\Rightarrow ","⇒"],["⇔","\\Leftrightarrow ","⇔"],["a+bi","{}+{}i",""]]],
  ["জ্যামিতি",[["∠","\\angle ","∠"],["△","\\triangle ","△"],["⊥","\\perp ","⊥"],["∥","\\parallel ","∥"],["≅","\\cong ","≅"],["∼","\\sim ","∼"],["π","\\pi ","π"],["°","^{\\circ}","°"],["AB̅ রেখাংশ","\\overline{}",""],["AB→ রশ্মি","\\overrightarrow{}",""],["AB↔ সরলরেখা","\\overleftrightarrow{}",""],["⌒ চাপ","\\overset{\\frown}{}",""],["□","\\square ","□"],["○","\\bigcirc ","○"],["⊙","\\odot ","⊙"]]],
  ["গ্রিক অক্ষর",[["α","\\alpha ","α"],["β","\\beta ","β"],["γ","\\gamma ","γ"],["δ","\\delta ","δ"],["ε","\\epsilon ","ε"],["θ","\\theta ","θ"],["λ","\\lambda ","λ"],["μ","\\mu ","μ"],["π","\\pi ","π"],["ρ","\\rho ","ρ"],["σ","\\sigma ","σ"],["τ","\\tau ","τ"],["φ","\\phi ","φ"],["ω","\\omega ","ω"],["Δ","\\Delta ","Δ"],["Σ","\\Sigma ","Σ"],["Ω","\\Omega ","Ω"],["Φ","\\Phi ","Φ"],["Π","\\Pi ","Π"],["Θ","\\Theta ","Θ"]]],
@@ -23878,10 +23879,11 @@ function symShow(inEq){
 $("symBtn").onclick=()=>{ const b=$("symboard"); if(!b.hidden&&!$("eqedit").contains(b)){b.hidden=true;return;} symShow(false); };
 $("eqSym").onclick=()=>{ const b=$("symboard"); if(!b.hidden&&$("eqedit").contains(b)){b.hidden=true;return;} symShow(true); $("eqtex").focus(); };
 function eqTo(pos){const t=$("eqtex");t.focus();t.setSelectionRange(pos,pos);}
+const fillHole=(tex,x)=>{ if(/^\\(?:over|under)set/.test(tex)){ const k=tex.lastIndexOf("{}"); return tex.slice(0,k)+"{"+x+"}"+tex.slice(k+2); } return tex.replace("{}","{"+x+"}"); }; // over/under: the chosen letter is the middle
 function eqInsert(tex){
   const t=$("eqtex"), s=t.selectionStart??t.value.length, e=t.selectionEnd??s;
   const before=t.value.slice(0,s), after=t.value.slice(e), picked=t.value.slice(s,e);
-  if(picked&&tex.includes("{}")){ tex=tex.replace("{}","{"+picked+"}"); t.value=before+tex+after; const h=tex.indexOf("{}"); eqTo(h>=0?s+h+1:s+tex.length); previewEq(); return; }
+  if(picked&&tex.includes("{}")){ tex=fillHole(tex,picked); t.value=before+tex+after; const h=tex.indexOf("{}"); eqTo(h>=0?s+h+1:s+tex.length); previewEq(); return; }
   // a plain symbol right after a letter-command needs a space, e.g. "\pi" then "2"
   t.value=before+tex+after;
   const hole=tex.indexOf("{}"); eqTo(hole>=0?s+hole+1:s+tex.length);
@@ -23980,7 +23982,7 @@ function symPut([label,tex,uni]){
   }
   if(words&&tex.includes("{}")&&!r.cloneContents().querySelector('[contenteditable="false"],p,h2,h3,table')&&!needOwnPaper()){
     const fill=/^[A-Za-z0-9+\-=().,]+$/.test(words)?words:"\\text{"+words.replace(/([#$%&_{}])/g,"\\$1").replace(/[\\^~]/g,"")+"}";
-    const t2=tex.replace("{}","{"+fill+"}");
+    const t2=fillHole(tex,fill);
     snapshot(); r.deleteContents(); r.collapse(true); lastRange=r;
     insertInline(mathHTML(t2,false).replace('class="m"','class="m" data-new="1"'));
     const m=$("doc").querySelector('[data-new="1"]'); if(!m) return;
