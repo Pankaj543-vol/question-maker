@@ -297,28 +297,255 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
   #printArea .pwrap:last-child{break-after:auto;page-break-after:auto}
   #printArea .psheet{position:absolute!important;left:0;top:0;box-shadow:none!important;overflow:hidden;transform-origin:0 0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
-/* the paper may come out the other way round (Android printing often keeps A4 upright): then each sheet is turned to fill the page */
+/* every sheet is put in the exact middle of the paper and shrunk only if the paper (or the printer's printable area) is smaller than A4,
+   so both halves of a two-question sheet stay equal and the fold/cut line is in the centre. The paper may also come out the other
+   way round (Android printing often keeps A4 upright): then each sheet is turned to fill it. */
+@media print{
+  #printArea .pwrap{width:100vw!important;height:calc(100vh - 1px)!important}
+  #printArea{--s:min(var(--sw,1),var(--sh,1))}
+}
 @media print and (orientation:landscape){
-  #printArea.pland .pwrap{width:297mm;height:209.5mm}
-  #printArea.pport .pwrap{width:297mm;height:209.5mm}
-  #printArea.pport .psheet{transform:translateY(210mm) rotate(-90deg)!important}
+  #printArea.pland .psheet{transform:translate(50vw,50vh) scale(var(--s)) translate(-50%,-50%)!important}
+  #printArea.pport .psheet{transform:translate(50vw,50vh) rotate(-90deg) scale(var(--s)) translate(-50%,-50%)!important}
 }
 @media print and (orientation:portrait){
-  #printArea.pport .pwrap{width:210mm;height:296.5mm}
-  #printArea.pland .pwrap{width:210mm;height:296.5mm}
-  #printArea.pland .psheet{transform:translateX(210mm) rotate(90deg)!important}
+  #printArea.pport .psheet{transform:translate(50vw,50vh) scale(var(--s)) translate(-50%,-50%)!important}
+  #printArea.pland .psheet{transform:translate(50vw,50vh) rotate(90deg) scale(var(--s)) translate(-50%,-50%)!important}
 }
-/* paper set to US "Letter" on some phones (a little shorter, a little wider than A4): shrink each sheet by 6.5% and centre it, so nothing is cut */
-@media print and (orientation:landscape) and (max-width:290mm){
-  #printArea.pland .pwrap,#printArea.pport .pwrap{width:279mm;height:215mm}
-  #printArea.pland .psheet{transform:translate(.8mm,9.7mm) scale(.935)!important}
-  #printArea.pport .psheet{transform:translate(.8mm,9.7mm) translateY(196.35mm) rotate(-90deg) scale(.935)!important}
-}
-@media print and (orientation:portrait) and (max-height:290mm){
-  #printArea.pport .pwrap,#printArea.pland .pwrap{width:215mm;height:279mm}
-  #printArea.pport .psheet{transform:translate(9.7mm,.8mm) scale(.935)!important}
-  #printArea.pland .psheet{transform:translate(9.7mm,.8mm) translateX(196.35mm) rotate(90deg) scale(.935)!important}
-}
+@media print and (orientation:landscape) and (max-width:296mm){#printArea{--sw:0.9933}}
+@media print and (orientation:landscape) and (max-width:295mm){#printArea{--sw:0.9899}}
+@media print and (orientation:landscape) and (max-width:294mm){#printArea{--sw:0.9865}}
+@media print and (orientation:landscape) and (max-width:293mm){#printArea{--sw:0.9832}}
+@media print and (orientation:landscape) and (max-width:292mm){#printArea{--sw:0.9798}}
+@media print and (orientation:landscape) and (max-width:291mm){#printArea{--sw:0.9764}}
+@media print and (orientation:landscape) and (max-width:290mm){#printArea{--sw:0.9731}}
+@media print and (orientation:landscape) and (max-width:289mm){#printArea{--sw:0.9697}}
+@media print and (orientation:landscape) and (max-width:288mm){#printArea{--sw:0.9663}}
+@media print and (orientation:landscape) and (max-width:287mm){#printArea{--sw:0.9630}}
+@media print and (orientation:landscape) and (max-width:286mm){#printArea{--sw:0.9596}}
+@media print and (orientation:landscape) and (max-width:285mm){#printArea{--sw:0.9562}}
+@media print and (orientation:landscape) and (max-width:284mm){#printArea{--sw:0.9529}}
+@media print and (orientation:landscape) and (max-width:283mm){#printArea{--sw:0.9495}}
+@media print and (orientation:landscape) and (max-width:282mm){#printArea{--sw:0.9461}}
+@media print and (orientation:landscape) and (max-width:281mm){#printArea{--sw:0.9428}}
+@media print and (orientation:landscape) and (max-width:280mm){#printArea{--sw:0.9394}}
+@media print and (orientation:landscape) and (max-width:279mm){#printArea{--sw:0.9360}}
+@media print and (orientation:landscape) and (max-width:278mm){#printArea{--sw:0.9327}}
+@media print and (orientation:landscape) and (max-width:277mm){#printArea{--sw:0.9293}}
+@media print and (orientation:landscape) and (max-width:276mm){#printArea{--sw:0.9259}}
+@media print and (orientation:landscape) and (max-width:275mm){#printArea{--sw:0.9226}}
+@media print and (orientation:landscape) and (max-width:274mm){#printArea{--sw:0.9192}}
+@media print and (orientation:landscape) and (max-width:273mm){#printArea{--sw:0.9158}}
+@media print and (orientation:landscape) and (max-width:272mm){#printArea{--sw:0.9125}}
+@media print and (orientation:landscape) and (max-width:271mm){#printArea{--sw:0.9091}}
+@media print and (orientation:landscape) and (max-width:270mm){#printArea{--sw:0.9057}}
+@media print and (orientation:landscape) and (max-width:269mm){#printArea{--sw:0.9024}}
+@media print and (orientation:landscape) and (max-width:268mm){#printArea{--sw:0.8990}}
+@media print and (orientation:landscape) and (max-width:267mm){#printArea{--sw:0.8956}}
+@media print and (orientation:landscape) and (max-width:266mm){#printArea{--sw:0.8923}}
+@media print and (orientation:landscape) and (max-width:265mm){#printArea{--sw:0.8889}}
+@media print and (orientation:landscape) and (max-width:264mm){#printArea{--sw:0.8855}}
+@media print and (orientation:landscape) and (max-width:263mm){#printArea{--sw:0.8822}}
+@media print and (orientation:landscape) and (max-width:262mm){#printArea{--sw:0.8788}}
+@media print and (orientation:landscape) and (max-width:261mm){#printArea{--sw:0.8754}}
+@media print and (orientation:landscape) and (max-width:260mm){#printArea{--sw:0.8721}}
+@media print and (orientation:landscape) and (max-width:259mm){#printArea{--sw:0.8687}}
+@media print and (orientation:landscape) and (max-width:258mm){#printArea{--sw:0.8653}}
+@media print and (orientation:landscape) and (max-width:257mm){#printArea{--sw:0.8620}}
+@media print and (orientation:landscape) and (max-width:256mm){#printArea{--sw:0.8586}}
+@media print and (orientation:landscape) and (max-width:255mm){#printArea{--sw:0.8552}}
+@media print and (orientation:landscape) and (max-width:254mm){#printArea{--sw:0.8519}}
+@media print and (orientation:landscape) and (max-width:253mm){#printArea{--sw:0.8485}}
+@media print and (orientation:landscape) and (max-width:252mm){#printArea{--sw:0.8451}}
+@media print and (orientation:landscape) and (max-width:251mm){#printArea{--sw:0.8418}}
+@media print and (orientation:landscape) and (max-width:250mm){#printArea{--sw:0.8384}}
+@media print and (orientation:landscape) and (max-width:249mm){#printArea{--sw:0.8350}}
+@media print and (orientation:landscape) and (max-width:248mm){#printArea{--sw:0.8316}}
+@media print and (orientation:landscape) and (max-width:247mm){#printArea{--sw:0.8283}}
+@media print and (orientation:landscape) and (max-width:246mm){#printArea{--sw:0.8249}}
+@media print and (orientation:landscape) and (max-width:245mm){#printArea{--sw:0.8215}}
+@media print and (orientation:landscape) and (max-width:244mm){#printArea{--sw:0.8182}}
+@media print and (orientation:landscape) and (max-width:243mm){#printArea{--sw:0.8148}}
+@media print and (orientation:landscape) and (max-width:242mm){#printArea{--sw:0.8114}}
+@media print and (orientation:landscape) and (max-width:241mm){#printArea{--sw:0.8081}}
+@media print and (orientation:landscape) and (max-width:240mm){#printArea{--sw:0.8047}}
+@media print and (orientation:landscape) and (max-width:239mm){#printArea{--sw:0.8013}}
+@media print and (orientation:landscape) and (max-width:238mm){#printArea{--sw:0.7980}}
+@media print and (orientation:landscape) and (max-width:237mm){#printArea{--sw:0.7946}}
+@media print and (orientation:landscape) and (max-width:236mm){#printArea{--sw:0.7912}}
+@media print and (orientation:landscape) and (max-width:235mm){#printArea{--sw:0.7879}}
+@media print and (orientation:landscape) and (max-width:234mm){#printArea{--sw:0.7845}}
+@media print and (orientation:landscape) and (max-width:233mm){#printArea{--sw:0.7811}}
+@media print and (orientation:landscape) and (max-width:232mm){#printArea{--sw:0.7778}}
+@media print and (orientation:landscape) and (max-width:231mm){#printArea{--sw:0.7744}}
+@media print and (orientation:landscape) and (max-width:230mm){#printArea{--sw:0.7710}}
+@media print and (orientation:landscape) and (max-height:209mm){#printArea{--sh:0.9905}}
+@media print and (orientation:landscape) and (max-height:208mm){#printArea{--sh:0.9857}}
+@media print and (orientation:landscape) and (max-height:207mm){#printArea{--sh:0.9810}}
+@media print and (orientation:landscape) and (max-height:206mm){#printArea{--sh:0.9762}}
+@media print and (orientation:landscape) and (max-height:205mm){#printArea{--sh:0.9714}}
+@media print and (orientation:landscape) and (max-height:204mm){#printArea{--sh:0.9667}}
+@media print and (orientation:landscape) and (max-height:203mm){#printArea{--sh:0.9619}}
+@media print and (orientation:landscape) and (max-height:202mm){#printArea{--sh:0.9571}}
+@media print and (orientation:landscape) and (max-height:201mm){#printArea{--sh:0.9524}}
+@media print and (orientation:landscape) and (max-height:200mm){#printArea{--sh:0.9476}}
+@media print and (orientation:landscape) and (max-height:199mm){#printArea{--sh:0.9429}}
+@media print and (orientation:landscape) and (max-height:198mm){#printArea{--sh:0.9381}}
+@media print and (orientation:landscape) and (max-height:197mm){#printArea{--sh:0.9333}}
+@media print and (orientation:landscape) and (max-height:196mm){#printArea{--sh:0.9286}}
+@media print and (orientation:landscape) and (max-height:195mm){#printArea{--sh:0.9238}}
+@media print and (orientation:landscape) and (max-height:194mm){#printArea{--sh:0.9190}}
+@media print and (orientation:landscape) and (max-height:193mm){#printArea{--sh:0.9143}}
+@media print and (orientation:landscape) and (max-height:192mm){#printArea{--sh:0.9095}}
+@media print and (orientation:landscape) and (max-height:191mm){#printArea{--sh:0.9048}}
+@media print and (orientation:landscape) and (max-height:190mm){#printArea{--sh:0.9000}}
+@media print and (orientation:landscape) and (max-height:189mm){#printArea{--sh:0.8952}}
+@media print and (orientation:landscape) and (max-height:188mm){#printArea{--sh:0.8905}}
+@media print and (orientation:landscape) and (max-height:187mm){#printArea{--sh:0.8857}}
+@media print and (orientation:landscape) and (max-height:186mm){#printArea{--sh:0.8810}}
+@media print and (orientation:landscape) and (max-height:185mm){#printArea{--sh:0.8762}}
+@media print and (orientation:landscape) and (max-height:184mm){#printArea{--sh:0.8714}}
+@media print and (orientation:landscape) and (max-height:183mm){#printArea{--sh:0.8667}}
+@media print and (orientation:landscape) and (max-height:182mm){#printArea{--sh:0.8619}}
+@media print and (orientation:landscape) and (max-height:181mm){#printArea{--sh:0.8571}}
+@media print and (orientation:landscape) and (max-height:180mm){#printArea{--sh:0.8524}}
+@media print and (orientation:landscape) and (max-height:179mm){#printArea{--sh:0.8476}}
+@media print and (orientation:landscape) and (max-height:178mm){#printArea{--sh:0.8429}}
+@media print and (orientation:landscape) and (max-height:177mm){#printArea{--sh:0.8381}}
+@media print and (orientation:landscape) and (max-height:176mm){#printArea{--sh:0.8333}}
+@media print and (orientation:landscape) and (max-height:175mm){#printArea{--sh:0.8286}}
+@media print and (orientation:landscape) and (max-height:174mm){#printArea{--sh:0.8238}}
+@media print and (orientation:landscape) and (max-height:173mm){#printArea{--sh:0.8190}}
+@media print and (orientation:landscape) and (max-height:172mm){#printArea{--sh:0.8143}}
+@media print and (orientation:landscape) and (max-height:171mm){#printArea{--sh:0.8095}}
+@media print and (orientation:landscape) and (max-height:170mm){#printArea{--sh:0.8048}}
+@media print and (orientation:landscape) and (max-height:169mm){#printArea{--sh:0.8000}}
+@media print and (orientation:landscape) and (max-height:168mm){#printArea{--sh:0.7952}}
+@media print and (orientation:landscape) and (max-height:167mm){#printArea{--sh:0.7905}}
+@media print and (orientation:landscape) and (max-height:166mm){#printArea{--sh:0.7857}}
+@media print and (orientation:landscape) and (max-height:165mm){#printArea{--sh:0.7810}}
+@media print and (orientation:landscape) and (max-height:164mm){#printArea{--sh:0.7762}}
+@media print and (orientation:landscape) and (max-height:163mm){#printArea{--sh:0.7714}}
+@media print and (orientation:landscape) and (max-height:162mm){#printArea{--sh:0.7667}}
+@media print and (orientation:landscape) and (max-height:161mm){#printArea{--sh:0.7619}}
+@media print and (orientation:landscape) and (max-height:160mm){#printArea{--sh:0.7571}}
+@media print and (orientation:portrait) and (max-width:209mm){#printArea{--sw:0.9905}}
+@media print and (orientation:portrait) and (max-width:208mm){#printArea{--sw:0.9857}}
+@media print and (orientation:portrait) and (max-width:207mm){#printArea{--sw:0.9810}}
+@media print and (orientation:portrait) and (max-width:206mm){#printArea{--sw:0.9762}}
+@media print and (orientation:portrait) and (max-width:205mm){#printArea{--sw:0.9714}}
+@media print and (orientation:portrait) and (max-width:204mm){#printArea{--sw:0.9667}}
+@media print and (orientation:portrait) and (max-width:203mm){#printArea{--sw:0.9619}}
+@media print and (orientation:portrait) and (max-width:202mm){#printArea{--sw:0.9571}}
+@media print and (orientation:portrait) and (max-width:201mm){#printArea{--sw:0.9524}}
+@media print and (orientation:portrait) and (max-width:200mm){#printArea{--sw:0.9476}}
+@media print and (orientation:portrait) and (max-width:199mm){#printArea{--sw:0.9429}}
+@media print and (orientation:portrait) and (max-width:198mm){#printArea{--sw:0.9381}}
+@media print and (orientation:portrait) and (max-width:197mm){#printArea{--sw:0.9333}}
+@media print and (orientation:portrait) and (max-width:196mm){#printArea{--sw:0.9286}}
+@media print and (orientation:portrait) and (max-width:195mm){#printArea{--sw:0.9238}}
+@media print and (orientation:portrait) and (max-width:194mm){#printArea{--sw:0.9190}}
+@media print and (orientation:portrait) and (max-width:193mm){#printArea{--sw:0.9143}}
+@media print and (orientation:portrait) and (max-width:192mm){#printArea{--sw:0.9095}}
+@media print and (orientation:portrait) and (max-width:191mm){#printArea{--sw:0.9048}}
+@media print and (orientation:portrait) and (max-width:190mm){#printArea{--sw:0.9000}}
+@media print and (orientation:portrait) and (max-width:189mm){#printArea{--sw:0.8952}}
+@media print and (orientation:portrait) and (max-width:188mm){#printArea{--sw:0.8905}}
+@media print and (orientation:portrait) and (max-width:187mm){#printArea{--sw:0.8857}}
+@media print and (orientation:portrait) and (max-width:186mm){#printArea{--sw:0.8810}}
+@media print and (orientation:portrait) and (max-width:185mm){#printArea{--sw:0.8762}}
+@media print and (orientation:portrait) and (max-width:184mm){#printArea{--sw:0.8714}}
+@media print and (orientation:portrait) and (max-width:183mm){#printArea{--sw:0.8667}}
+@media print and (orientation:portrait) and (max-width:182mm){#printArea{--sw:0.8619}}
+@media print and (orientation:portrait) and (max-width:181mm){#printArea{--sw:0.8571}}
+@media print and (orientation:portrait) and (max-width:180mm){#printArea{--sw:0.8524}}
+@media print and (orientation:portrait) and (max-width:179mm){#printArea{--sw:0.8476}}
+@media print and (orientation:portrait) and (max-width:178mm){#printArea{--sw:0.8429}}
+@media print and (orientation:portrait) and (max-width:177mm){#printArea{--sw:0.8381}}
+@media print and (orientation:portrait) and (max-width:176mm){#printArea{--sw:0.8333}}
+@media print and (orientation:portrait) and (max-width:175mm){#printArea{--sw:0.8286}}
+@media print and (orientation:portrait) and (max-width:174mm){#printArea{--sw:0.8238}}
+@media print and (orientation:portrait) and (max-width:173mm){#printArea{--sw:0.8190}}
+@media print and (orientation:portrait) and (max-width:172mm){#printArea{--sw:0.8143}}
+@media print and (orientation:portrait) and (max-width:171mm){#printArea{--sw:0.8095}}
+@media print and (orientation:portrait) and (max-width:170mm){#printArea{--sw:0.8048}}
+@media print and (orientation:portrait) and (max-width:169mm){#printArea{--sw:0.8000}}
+@media print and (orientation:portrait) and (max-width:168mm){#printArea{--sw:0.7952}}
+@media print and (orientation:portrait) and (max-width:167mm){#printArea{--sw:0.7905}}
+@media print and (orientation:portrait) and (max-width:166mm){#printArea{--sw:0.7857}}
+@media print and (orientation:portrait) and (max-width:165mm){#printArea{--sw:0.7810}}
+@media print and (orientation:portrait) and (max-width:164mm){#printArea{--sw:0.7762}}
+@media print and (orientation:portrait) and (max-width:163mm){#printArea{--sw:0.7714}}
+@media print and (orientation:portrait) and (max-width:162mm){#printArea{--sw:0.7667}}
+@media print and (orientation:portrait) and (max-width:161mm){#printArea{--sw:0.7619}}
+@media print and (orientation:portrait) and (max-width:160mm){#printArea{--sw:0.7571}}
+@media print and (orientation:portrait) and (max-height:296mm){#printArea{--sh:0.9933}}
+@media print and (orientation:portrait) and (max-height:295mm){#printArea{--sh:0.9899}}
+@media print and (orientation:portrait) and (max-height:294mm){#printArea{--sh:0.9865}}
+@media print and (orientation:portrait) and (max-height:293mm){#printArea{--sh:0.9832}}
+@media print and (orientation:portrait) and (max-height:292mm){#printArea{--sh:0.9798}}
+@media print and (orientation:portrait) and (max-height:291mm){#printArea{--sh:0.9764}}
+@media print and (orientation:portrait) and (max-height:290mm){#printArea{--sh:0.9731}}
+@media print and (orientation:portrait) and (max-height:289mm){#printArea{--sh:0.9697}}
+@media print and (orientation:portrait) and (max-height:288mm){#printArea{--sh:0.9663}}
+@media print and (orientation:portrait) and (max-height:287mm){#printArea{--sh:0.9630}}
+@media print and (orientation:portrait) and (max-height:286mm){#printArea{--sh:0.9596}}
+@media print and (orientation:portrait) and (max-height:285mm){#printArea{--sh:0.9562}}
+@media print and (orientation:portrait) and (max-height:284mm){#printArea{--sh:0.9529}}
+@media print and (orientation:portrait) and (max-height:283mm){#printArea{--sh:0.9495}}
+@media print and (orientation:portrait) and (max-height:282mm){#printArea{--sh:0.9461}}
+@media print and (orientation:portrait) and (max-height:281mm){#printArea{--sh:0.9428}}
+@media print and (orientation:portrait) and (max-height:280mm){#printArea{--sh:0.9394}}
+@media print and (orientation:portrait) and (max-height:279mm){#printArea{--sh:0.9360}}
+@media print and (orientation:portrait) and (max-height:278mm){#printArea{--sh:0.9327}}
+@media print and (orientation:portrait) and (max-height:277mm){#printArea{--sh:0.9293}}
+@media print and (orientation:portrait) and (max-height:276mm){#printArea{--sh:0.9259}}
+@media print and (orientation:portrait) and (max-height:275mm){#printArea{--sh:0.9226}}
+@media print and (orientation:portrait) and (max-height:274mm){#printArea{--sh:0.9192}}
+@media print and (orientation:portrait) and (max-height:273mm){#printArea{--sh:0.9158}}
+@media print and (orientation:portrait) and (max-height:272mm){#printArea{--sh:0.9125}}
+@media print and (orientation:portrait) and (max-height:271mm){#printArea{--sh:0.9091}}
+@media print and (orientation:portrait) and (max-height:270mm){#printArea{--sh:0.9057}}
+@media print and (orientation:portrait) and (max-height:269mm){#printArea{--sh:0.9024}}
+@media print and (orientation:portrait) and (max-height:268mm){#printArea{--sh:0.8990}}
+@media print and (orientation:portrait) and (max-height:267mm){#printArea{--sh:0.8956}}
+@media print and (orientation:portrait) and (max-height:266mm){#printArea{--sh:0.8923}}
+@media print and (orientation:portrait) and (max-height:265mm){#printArea{--sh:0.8889}}
+@media print and (orientation:portrait) and (max-height:264mm){#printArea{--sh:0.8855}}
+@media print and (orientation:portrait) and (max-height:263mm){#printArea{--sh:0.8822}}
+@media print and (orientation:portrait) and (max-height:262mm){#printArea{--sh:0.8788}}
+@media print and (orientation:portrait) and (max-height:261mm){#printArea{--sh:0.8754}}
+@media print and (orientation:portrait) and (max-height:260mm){#printArea{--sh:0.8721}}
+@media print and (orientation:portrait) and (max-height:259mm){#printArea{--sh:0.8687}}
+@media print and (orientation:portrait) and (max-height:258mm){#printArea{--sh:0.8653}}
+@media print and (orientation:portrait) and (max-height:257mm){#printArea{--sh:0.8620}}
+@media print and (orientation:portrait) and (max-height:256mm){#printArea{--sh:0.8586}}
+@media print and (orientation:portrait) and (max-height:255mm){#printArea{--sh:0.8552}}
+@media print and (orientation:portrait) and (max-height:254mm){#printArea{--sh:0.8519}}
+@media print and (orientation:portrait) and (max-height:253mm){#printArea{--sh:0.8485}}
+@media print and (orientation:portrait) and (max-height:252mm){#printArea{--sh:0.8451}}
+@media print and (orientation:portrait) and (max-height:251mm){#printArea{--sh:0.8418}}
+@media print and (orientation:portrait) and (max-height:250mm){#printArea{--sh:0.8384}}
+@media print and (orientation:portrait) and (max-height:249mm){#printArea{--sh:0.8350}}
+@media print and (orientation:portrait) and (max-height:248mm){#printArea{--sh:0.8316}}
+@media print and (orientation:portrait) and (max-height:247mm){#printArea{--sh:0.8283}}
+@media print and (orientation:portrait) and (max-height:246mm){#printArea{--sh:0.8249}}
+@media print and (orientation:portrait) and (max-height:245mm){#printArea{--sh:0.8215}}
+@media print and (orientation:portrait) and (max-height:244mm){#printArea{--sh:0.8182}}
+@media print and (orientation:portrait) and (max-height:243mm){#printArea{--sh:0.8148}}
+@media print and (orientation:portrait) and (max-height:242mm){#printArea{--sh:0.8114}}
+@media print and (orientation:portrait) and (max-height:241mm){#printArea{--sh:0.8081}}
+@media print and (orientation:portrait) and (max-height:240mm){#printArea{--sh:0.8047}}
+@media print and (orientation:portrait) and (max-height:239mm){#printArea{--sh:0.8013}}
+@media print and (orientation:portrait) and (max-height:238mm){#printArea{--sh:0.7980}}
+@media print and (orientation:portrait) and (max-height:237mm){#printArea{--sh:0.7946}}
+@media print and (orientation:portrait) and (max-height:236mm){#printArea{--sh:0.7912}}
+@media print and (orientation:portrait) and (max-height:235mm){#printArea{--sh:0.7879}}
+@media print and (orientation:portrait) and (max-height:234mm){#printArea{--sh:0.7845}}
+@media print and (orientation:portrait) and (max-height:233mm){#printArea{--sh:0.7811}}
+@media print and (orientation:portrait) and (max-height:232mm){#printArea{--sh:0.7778}}
+@media print and (orientation:portrait) and (max-height:231mm){#printArea{--sh:0.7744}}
+@media print and (orientation:portrait) and (max-height:230mm){#printArea{--sh:0.7710}}
 .margbox{margin-top:10px;display:flex;flex-direction:column;gap:6px}
 .marggrid{display:grid;grid-template-columns:auto auto 5.2em auto;gap:6px 8px;align-items:center;justify-content:start}
 .marggrid b{text-align:center;font-variant-numeric:tabular-nums}
@@ -590,7 +817,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২৬ নভেম্বর (শ্রেণির ফোল্ডার, শেয়ার, মুছুন)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২৬ নভেম্বর ২ (ছাপা মাঝখানে, দুই ভাগ সমান)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
