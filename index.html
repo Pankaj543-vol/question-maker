@@ -230,6 +230,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 .sheetbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(10px + env(safe-area-inset-bottom,0px));width:min(96vw,640px);max-height:45vh;overflow:auto;z-index:65;box-shadow:0 8px 28px rgba(0,0,0,.28);box-sizing:border-box}
 .libbox{display:flex;flex-direction:column;gap:8px}
 .libin{font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--fg);min-width:0;width:100%;box-sizing:border-box}
+.pfold{display:flex;gap:8px;align-items:stretch;border-top:1px solid var(--line);padding:7px 0}.pfold .pfopen{flex:1;text-align:left}.pfback{display:flex;gap:10px;align-items:center;padding:6px 0}
 .pitem{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;border-top:1px solid var(--line);padding:9px 0;align-items:start}
 .pitem input[type=checkbox]{width:20px;height:20px;margin-top:2px}
 .pitem .pname{font-weight:600;word-break:break-word}
@@ -589,7 +590,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২৫ নভেম্বর ২ (সংখ্যার মাথায় ঘাত)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২৬ নভেম্বর (শ্রেণির ফোল্ডার, শেয়ার, মুছুন)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -24406,7 +24407,7 @@ async function saveNow(){
   const sig=JSON.stringify([html,hdr,set,name]); if(sig===lastSig) return;
   if(!curId){ if(isBlankDoc()) return; curId=newId(); store.set("curPaper",curId); }
   const old=await DB.meta(curId).catch(()=>null);
-  const meta={id:curId,name,auto:autoName(hdr),created:(old&&old.created)||Date.now(),updated:Date.now(),pages:Math.max(1,pageList.length||1),size:html.length};
+  const meta={id:curId,name,auto:autoName(hdr),cls:clsOf(hdr.hClass),created:(old&&old.created)||Date.now(),updated:Date.now(),pages:Math.max(1,pageList.length||1),size:html.length};
   try{
     await DB.put(meta,{id:curId,html,hdr,set}); lastSig=sig;
     $("saveNote").textContent="✓ সেভ হয়েছে · "+whenText(meta.updated);
@@ -24465,24 +24466,60 @@ $("papNew").onclick=newPaper;
 
 /* list, select, delete */
 let papSel=new Set(), papPending=null;
+const ROMC=["","I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII"];
+function clsOf(v){ // "VI", "6", "৬", "ষষ্ঠ", "Six", "Class – VI" → 6 ; nothing → 0
+  let t=String(v||"").replace(/[০-৯]/g,d=>"০১২৩৪৫৬৭৮৯".indexOf(d)).replace(/class|শ্রেণি|শ্রেণী|std\.?|standard/ig," ").replace(/[–—\-:.()]/g," ").trim();
+  let m=t.match(/\b(1[0-2]|[1-9])\b/); if(m) return +m[1];
+  m=t.toUpperCase().match(/\b(XII|XI|X|IX|VIII|VII|VI|V|IV|III|II|I)\b/); if(m) return ROMC.indexOf(m[1]);
+  const W=[["one","first","প্রথম"],["two","second","দ্বিতীয়"],["three","third","তৃতীয়"],["four","fourth","চতুর্থ"],["five","fifth","পঞ্চম"],["six","sixth","ষষ্ঠ"],["seven","seventh","সপ্তম"],["eight","eighth","অষ্টম"],["nine","ninth","নবম"],["ten","tenth","দশম"],["eleven","eleventh","একাদশ"],["twelve","twelfth","দ্বাদশ"]];
+  const lo=t.toLowerCase(); for(let i=W.length-1;i>=0;i--) if(W[i].some(w=>new RegExp("(^|[^a-z\\u0980-\\u09ff])"+w+"($|[^a-z\\u0980-\\u09ff])").test(lo))) return i+1;
+  return 0;
+}
+let papFolder=null; // null = folder list, 0–12 = inside that class
+async function sharePapers(ids,fname){
+  const papers=[]; for(const id of ids){const [m,b]=await Promise.all([DB.meta(id),DB.body(id)]);if(m&&b)papers.push({meta:m,body:b});}
+  if(!papers.length){ setStatus("পাঠানোর মতো কোনো প্রশ্নপত্র নেই।",true); return; }
+  const json=JSON.stringify({app:"hostolipi",v:1,saved:Date.now(),papers}), base=fname.replace(/[\\/:*?"<>|]/g,"").slice(0,80)||"প্রশ্নপত্র";
+  const tries=[new File([json],base+".json",{type:"application/json"}),new File([json],base+".txt",{type:"text/plain"})];
+  for(const f of tries){ try{ if(navigator.canShare&&navigator.canShare({files:[f]})){
+    await navigator.share({files:[f],title:base,text:"Pankaj Question Maker-এর প্রশ্নপত্র। অ্যাপে \"⬆ ফাইল খুলুন\" চেপে এই ফাইলটা খুলুন।"});
+    setStatus("পাঠানো হল। যিনি পাবেন, তিনি অ্যাপে \"⬆ ফাইল খুলুন\" চেপে ফাইলটা খুলবেন।"); return; } }catch(e){ if(e&&e.name==="AbortError"){ setStatus("পাঠানো বাতিল হল।"); return; } } }
+  setStatus("এই ফোনে সরাসরি শেয়ার করা যাচ্ছে না। ফাইলটা ফোনে নামিয়ে দিচ্ছি, WhatsApp বা মেইলে সেটা জুড়ে পাঠান।",true);
+  papersToFile(ids,base);
+}
 async function renderList(){
   const metas=(await DB.metas().catch(()=>[])).sort((a,b)=>b.updated-a.updated);
   const q=$("papSearch").value.trim().toLowerCase();
-  const shown=metas.filter(m=>!q||showName(m).toLowerCase().includes(q));
+  for(const m of metas){ if(m.cls===undefined){ try{ const b=await DB.body(m.id); m.cls=clsOf(b&&b.hdr&&b.hdr.hClass); await DB.put(m,null); }catch{ m.cls=0; } } }
+  const inFolder=!q&&papFolder!==null;
+  const shown=metas.filter(m=>q?showName(m).toLowerCase().includes(q):inFolder&&(m.cls||0)===papFolder);
   [...papSel].forEach(id=>{if(!metas.some(m=>m.id===id))papSel.delete(id);});
   const box=$("papItems"); box.innerHTML="";
+  $("papAll").closest("label").hidden=!q&&!inFolder;
+  if(metas.length&&!q&&!inFolder){ // folders: class I to XII, then "no class"
+    for(let k=1;k<=13;k++){ const c=k===13?0:k, n=metas.filter(m=>(m.cls||0)===c).length; if(c===0&&!n) continue;
+      const f=document.createElement("div"); f.className="pfold";
+      f.innerHTML=`<button class="btn pfopen" type="button">📁 <b>${c?"শ্রেণি "+ROMC[c]:"শ্রেণি লেখা নেই"}</b> <span class="small">(${bn(n)}টি)</span></button><button class="btn" type="button" data-a="share"${n?"":" disabled"}>📤 শেয়ার</button><button class="btn" type="button" data-a="del"${n?"":" disabled"}>🗑 মুছুন</button>`;
+      f.querySelector(".pfopen").onclick=()=>{ papFolder=c; papSel.clear(); renderList(); };
+      f.querySelector('[data-a="share"]').onclick=()=>sharePapers(metas.filter(m=>(m.cls||0)===c).map(m=>m.id),c?"শ্রেণি "+ROMC[c]+" – প্রশ্নপত্র":"প্রশ্নপত্র");
+      f.querySelector('[data-a="del"]').onclick=()=>{ askDelete(metas.filter(m=>(m.cls||0)===c).map(m=>m.id)); };
+      box.appendChild(f); }
+  }
+  if(inFolder){ const bk=document.createElement("div"); bk.className="pfback"; bk.innerHTML=`<button class="btn" type="button">← সব ফোল্ডার</button> <b>📁 ${papFolder?"শ্রেণি "+ROMC[papFolder]:"শ্রেণি লেখা নেই"}</b>`; bk.querySelector("button").onclick=()=>{ papFolder=null; papSel.clear(); renderList(); }; box.appendChild(bk);
+    if(!shown.length){ const e=document.createElement("p"); e.className="small"; e.style.margin="6px 0"; e.textContent="এই শ্রেণির কোনো প্রশ্নপত্র এখনও নেই। প্রশ্নপত্রের মাথায় শ্রেণি লিখলে নিজে থেকে এখানে চলে আসবে।"; box.appendChild(e); } }
   if(!metas.length){box.innerHTML='<p class="small" style="margin:6px 0">এখনও কোনো প্রশ্নপত্র সেভ হয়নি। লেখা পেস্ট করলে বা টাইপ করলেই এখানে চলে আসবে।</p>';}
-  else if(!shown.length){box.innerHTML='<p class="small" style="margin:6px 0">এই নামে কিছু পাওয়া গেল না।</p>';}
+  else if(q&&!shown.length){box.innerHTML='<p class="small" style="margin:6px 0">এই নামে কিছু পাওয়া গেল না।</p>';}
   shown.forEach(m=>{
     const it=document.createElement("div"); it.className="pitem"+(m.id===curId?" cur":"");
     it.innerHTML=`<input type="checkbox" aria-label="বাছুন"><div><div class="pname"></div><div class="small"></div></div>
-      <div class="row"><button class="btn" data-a="open">খুলুন</button><button class="btn" data-a="ren">নাম বদলান</button><button class="btn" data-a="copy">কপি</button><button class="btn" data-a="del">মুছুন</button></div>`;
+      <div class="row"><button class="btn" data-a="open">খুলুন</button><button class="btn" data-a="ren">নাম বদলান</button><button class="btn" data-a="copy">কপি</button><button class="btn" data-a="share">📤 শেয়ার</button><button class="btn" data-a="del">মুছুন</button></div>`;
     it.querySelector(".pname").textContent=showName(m);
     it.querySelector(".small").textContent=`${whenText(m.updated)} · ${bn(m.pages||1)} পাতা · ${sizeText(m.size||0)}`;
     const cb=it.querySelector("input"); cb.checked=papSel.has(m.id);
     cb.onchange=()=>{cb.checked?papSel.add(m.id):papSel.delete(m.id);selUI(shown);};
     it.querySelector('[data-a="open"]').onclick=()=>openPaper(m.id);
     it.querySelector('[data-a="copy"]').onclick=()=>copyPaper(m.id);
+    it.querySelector('[data-a="share"]').onclick=()=>sharePapers([m.id],showName(m));
     it.querySelector('[data-a="del"]').onclick=()=>askDelete([m.id]);
     it.querySelector('[data-a="ren"]').onclick=()=>{
       const nm=it.querySelector(".pname"); const inp=document.createElement("input"); inp.className="libin"; inp.value=m.name||""; inp.placeholder=showName(m);
@@ -24501,7 +24538,7 @@ function selUI(shown){
 }
 $("papAll").onchange=async()=>{
   const metas=await DB.metas().catch(()=>[]); const q=$("papSearch").value.trim().toLowerCase();
-  const shown=metas.filter(m=>!q||showName(m).toLowerCase().includes(q));
+  const shown=metas.filter(m=>q?showName(m).toLowerCase().includes(q):papFolder!==null&&(m.cls||0)===papFolder);
   if($("papAll").checked) shown.forEach(m=>papSel.add(m.id)); else shown.forEach(m=>papSel.delete(m.id));
   renderList();
 };
