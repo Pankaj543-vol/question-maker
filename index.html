@@ -230,6 +230,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 .sheetbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(10px + env(safe-area-inset-bottom,0px));width:min(96vw,640px);max-height:45vh;overflow:auto;z-index:65;box-shadow:0 8px 28px rgba(0,0,0,.28);box-sizing:border-box}
 .libbox{display:flex;flex-direction:column;gap:8px}
 .libin{font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--fg);min-width:0;width:100%;box-sizing:border-box}
+.shsheet{border:2px solid #1f6f5c;border-radius:12px;padding:10px 12px;margin:8px 0;background:var(--card,#fff)}
 .pfold{display:flex;gap:8px;align-items:stretch;border-top:1px solid var(--line);padding:7px 0}.pfold .pfopen{flex:1;text-align:left}.pfback{display:flex;gap:10px;align-items:center;padding:6px 0}
 .pitem{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;border-top:1px solid var(--line);padding:9px 0;align-items:start}
 .pitem input[type=checkbox]{width:20px;height:20px;margin-top:2px}
@@ -817,7 +818,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২৬ নভেম্বর ৩ (শেয়ার ঠিক করা)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২৬ নভেম্বর ৪ (শেয়ারে PDF)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -842,6 +843,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
             <button class="btn" id="papImport">⬆ ফাইল খুলুন</button>
           </div>
           <input type="file" id="papFile" accept=".json,application/json,text/plain" hidden>
+          <div class="shsheet" id="shSheet" hidden><b id="shTitle"></b><p class="small" id="shNote" style="margin:4px 0 8px"></p><div class="row" id="shBtns"><button class="btn primary" id="shPdf" type="button">📄 PDF হিসেবে পাঠান</button><button class="btn" id="shApp" type="button">📝 অ্যাপের ফাইল পাঠান</button></div><div class="row" id="shReady" hidden><button class="btn primary" id="shSend" type="button">📤 এখন পাঠান</button><button class="btn" id="shSave" type="button">⬇ ফোনে নামান</button></div><button class="btn" id="shClose" type="button" style="margin-top:6px">✕ বন্ধ</button></div>
           <div id="papList" class="libbox" hidden>
             <input class="libin" id="papSearch" placeholder="🔎 নাম দিয়ে খুঁজুন" autocomplete="off">
             <div class="row">
@@ -24718,6 +24720,52 @@ async function sharePapers(ids,fname,asciiName){
   setStatus(`এই ফোনে সরাসরি শেয়ার খুলল না (${why})। ফাইলটা ফোনের Download-এ নামিয়ে দিচ্ছি। WhatsApp-এ 📎 → "Document" চেপে Download থেকে ফাইলটা বেছে পাঠান।`,true);
   papersToFile(ids,base);
 }
+
+/* ---- শেয়ার: PDF না অ্যাপের ফাইল ---- */
+let shJob=null, shFiles=null;
+function shareAsk(ids,name,ascii){
+  shJob={ids,name,ascii}; shFiles=null;
+  $("shTitle").textContent="📤 "+name+(ids.length>1?` (${bn(ids.length)}টি প্রশ্নপত্র)`:"");
+  $("shNote").textContent="PDF: কম্পিউটারে নামিয়ে সোজা প্রিন্ট করা যায়, অ্যাপ লাগে না। অ্যাপের ফাইল: অন্য কেউ এই অ্যাপে খুলে বদলাতে পারবেন।";
+  $("shBtns").hidden=false; $("shReady").hidden=true; $("shSheet").hidden=false; $("shSheet").scrollIntoView({block:"nearest",behavior:"smooth"});
+}
+$("shClose").onclick=()=>{ $("shSheet").hidden=true; shJob=null; shFiles=null; };
+$("shApp").onclick=()=>{ if(!shJob) return; const j=shJob; $("shSheet").hidden=true; sharePapers(j.ids,j.name,j.ascii); };
+function asciiName(){ const c=clsOf(hv("hClass")); const t=[hv("hSub"),c?"Class "+ROMC[c]:"",hv("hExam")].map(x=>String(x||"").replace(/[^A-Za-z0-9 _.\-]/g," ").replace(/\s+/g," ").trim()).filter(Boolean).join(" - "); return t.slice(0,90); }
+async function sheetToImg(sh){
+  const box=document.createElement("div"); box.style.cssText="position:fixed;left:-30000px;top:0;background:#fff"; sh.style.position="relative"; sh.style.transform="none"; sh.style.boxShadow="none"; box.appendChild(sh); document.body.appendChild(box);
+  try{ const c=await html2canvas(sh,{scale:2.2,backgroundColor:"#ffffff",logging:false,useCORS:true}); return c.toDataURL("image/jpeg",.9); } finally{ box.remove(); }
+}
+$("shPdf").onclick=async()=>{
+  if(!shJob) return; if(!window.jspdf||!window.html2canvas){ setStatus("এই ফোনে PDF বানানো যাচ্ছে না। \"অ্যাপের ফাইল\" দিয়ে পাঠান।",true); return; }
+  const ids=shJob.ids; $("shBtns").hidden=true;
+  await saveNow(); const back=curId, files=[], used=new Set();
+  try{
+    for(let i=0;i<ids.length;i++){
+      $("shNote").textContent=`PDF তৈরি হচ্ছে… ${bn(i+1)}/${bn(ids.length)}। একটু অপেক্ষা করুন, অ্যাপ বন্ধ করবেন না।`;
+      const [m,b]=await Promise.all([DB.meta(ids[i]),DB.body(ids[i])]); if(!m||!b) continue;
+      applyPaper(m,b); await (document.fonts&&document.fonts.ready||Promise.resolve()); await new Promise(r=>setTimeout(r,350)); refit();
+      const land=sheetLand(), sheets=buildSheets(true);
+      const doc=new window.jspdf.jsPDF({orientation:land?"landscape":"portrait",unit:"mm",format:"a4",compress:true});
+      const W=land?297:210, H=land?210:297;
+      for(let k=0;k<sheets.length;k++){ if(k) doc.addPage("a4",land?"landscape":"portrait"); doc.addImage(await sheetToImg(sheets[k].el),"JPEG",0,0,W,H,undefined,"FAST"); }
+      let nm=asciiName()||("Question paper "+(i+1)); while(used.has(nm)) nm+=" ("+(i+1)+")"; used.add(nm);
+      files.push(new File([doc.output("blob")],nm+".pdf",{type:"application/pdf"}));
+    }
+  }catch(e){ setStatus("PDF বানাতে সমস্যা হল ("+((e&&e.message)||e)+")। স্ক্রিনশট পাঠালে ঠিক করে দেব।",true); }
+  finally{ if(back&&back!==curId){ const [m,b]=await Promise.all([DB.meta(back),DB.body(back)]); if(m&&b) applyPaper(m,b); } }
+  if(!files.length){ $("shBtns").hidden=false; $("shNote").textContent="কোনো PDF তৈরি হয়নি।"; return; }
+  shFiles=files; const mb=files.reduce((a,f)=>a+f.size,0)/1048576;
+  $("shNote").textContent=`${bn(files.length)}টি PDF তৈরি (মোট ${bn(mb.toFixed(1))} MB)। এবার "📤 এখন পাঠান" চেপে WhatsApp বা Gmail বাছুন।`+(mb>24?" Gmail-এ ২৫ MB-র বেশি একবারে যায় না, দুবারে পাঠান বা WhatsApp ব্যবহার করুন।":"");
+  $("shReady").hidden=false;
+};
+$("shSend").onclick=async()=>{
+  if(!shFiles) return; let why="";
+  try{ if(navigator.share&&(!navigator.canShare||navigator.canShare({files:shFiles}))){ await navigator.share({files:shFiles}); setStatus("PDF পাঠানো হল।"); $("shSheet").hidden=true; return; } why=navigator.share?"type":"no-share"; }
+  catch(e){ if(e&&e.name==="AbortError"){ setStatus("পাঠানো বাতিল হল।"); return; } why=(e&&e.name)||"err"; }
+  setStatus(`এই ফোনে সরাসরি শেয়ার খুলল না (${why})। "⬇ ফোনে নামান" চেপে PDF-গুলো নামিয়ে WhatsApp-এ 📎 → Document দিয়ে পাঠান।`,true);
+};
+$("shSave").onclick=async()=>{ if(!shFiles||!downloads) return; for(const f of shFiles){ try{ await downloads.save({filename:f.name,data:f}); }catch(e){ setStatus(saveErr(e,"PDF"),true); return; } } setStatus(`${bn(shFiles.length)}টি PDF ফোনের Download-এ নামানো হল।`); };
 async function renderList(){
   const metas=(await DB.metas().catch(()=>[])).sort((a,b)=>b.updated-a.updated);
   const q=$("papSearch").value.trim().toLowerCase();
@@ -24732,7 +24780,7 @@ async function renderList(){
       const f=document.createElement("div"); f.className="pfold";
       f.innerHTML=`<button class="btn pfopen" type="button">📁 <b>${c?"শ্রেণি "+ROMC[c]:"শ্রেণি লেখা নেই"}</b> <span class="small">(${bn(n)}টি)</span></button><button class="btn" type="button" data-a="share"${n?"":" disabled"}>📤 শেয়ার</button><button class="btn" type="button" data-a="del"${n?"":" disabled"}>🗑 মুছুন</button>`;
       f.querySelector(".pfopen").onclick=()=>{ papFolder=c; papSel.clear(); renderList(); };
-      f.querySelector('[data-a="share"]').onclick=()=>sharePapers(metas.filter(m=>(m.cls||0)===c).map(m=>m.id),c?"শ্রেণি "+ROMC[c]+" – প্রশ্নপত্র":"প্রশ্নপত্র",c?"Class "+ROMC[c]+" question papers":"Question papers");
+      f.querySelector('[data-a="share"]').onclick=()=>shareAsk(metas.filter(m=>(m.cls||0)===c).map(m=>m.id),c?"শ্রেণি "+ROMC[c]+" – প্রশ্নপত্র":"প্রশ্নপত্র",c?"Class "+ROMC[c]+" question papers":"Question papers");
       f.querySelector('[data-a="del"]').onclick=()=>{ askDelete(metas.filter(m=>(m.cls||0)===c).map(m=>m.id)); };
       box.appendChild(f); }
   }
@@ -24750,7 +24798,7 @@ async function renderList(){
     cb.onchange=()=>{cb.checked?papSel.add(m.id):papSel.delete(m.id);selUI(shown);};
     it.querySelector('[data-a="open"]').onclick=()=>openPaper(m.id);
     it.querySelector('[data-a="copy"]').onclick=()=>copyPaper(m.id);
-    it.querySelector('[data-a="share"]').onclick=()=>sharePapers([m.id],showName(m));
+    it.querySelector('[data-a="share"]').onclick=()=>shareAsk([m.id],showName(m));
     it.querySelector('[data-a="del"]').onclick=()=>askDelete([m.id]);
     it.querySelector('[data-a="ren"]').onclick=()=>{
       const nm=it.querySelector(".pname"); const inp=document.createElement("input"); inp.className="libin"; inp.value=m.name||""; inp.placeholder=showName(m);
