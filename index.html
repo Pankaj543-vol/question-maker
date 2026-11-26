@@ -817,7 +817,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২৬ নভেম্বর ২ (ছাপা মাঝখানে, দুই ভাগ সমান)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২৬ নভেম্বর ৩ (শেয়ার ঠিক করা)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -24703,15 +24703,19 @@ function clsOf(v){ // "VI", "6", "৬", "ষষ্ঠ", "Six", "Class – VI" �
   return 0;
 }
 let papFolder=null; // null = folder list, 0–12 = inside that class
-async function sharePapers(ids,fname){
+async function sharePapers(ids,fname,asciiName){
   const papers=[]; for(const id of ids){const [m,b]=await Promise.all([DB.meta(id),DB.body(id)]);if(m&&b)papers.push({meta:m,body:b});}
   if(!papers.length){ setStatus("পাঠানোর মতো কোনো প্রশ্নপত্র নেই।",true); return; }
   const json=JSON.stringify({app:"hostolipi",v:1,saved:Date.now(),papers}), base=fname.replace(/[\\/:*?"<>|]/g,"").slice(0,80)||"প্রশ্নপত্র";
-  const tries=[new File([json],base+".json",{type:"application/json"}),new File([json],base+".txt",{type:"text/plain"})];
-  for(const f of tries){ try{ if(navigator.canShare&&navigator.canShare({files:[f]})){
-    await navigator.share({files:[f],title:base,text:"Pankaj Question Maker-এর প্রশ্নপত্র। অ্যাপে \"⬆ ফাইল খুলুন\" চেপে এই ফাইলটা খুলুন।"});
-    setStatus("পাঠানো হল। যিনি পাবেন, তিনি অ্যাপে \"⬆ ফাইল খুলুন\" চেপে ফাইলটা খুলবেন।"); return; } }catch(e){ if(e&&e.name==="AbortError"){ setStatus("পাঠানো বাতিল হল।"); return; } } }
-  setStatus("এই ফোনে সরাসরি শেয়ার করা যাচ্ছে না। ফাইলটা ফোনে নামিয়ে দিচ্ছি, WhatsApp বা মেইলে সেটা জুড়ে পাঠান।",true);
+  // Android shares .txt files (not .json); the app opens both. ASCII name first, as some phones refuse other names.
+  const ascii=(asciiName||base.replace(/[^A-Za-z0-9 _.\-–]/g," ").replace(/\s+/g," ").replace(/(\s*[–-]\s*)+/g," - ").replace(/^[\s-]+|[\s-]+$/g,"")||"question-paper").slice(0,60);
+  const tries=[[new File([json],ascii+".txt",{type:"text/plain"}),false],[new File([json],base+".txt",{type:"text/plain"}),false],[new File([json],ascii+".txt",{type:"text/plain"}),true],[new File([json],base+".json",{type:"application/json"}),false]];
+  let why=navigator.share?(navigator.canShare?"":"no-canShare"):"no-share";
+  for(const [f,withText] of tries){ try{ if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[f]}))){
+    const o={files:[f]}; if(withText){o.title=base;o.text="Pankaj Question Maker-এর প্রশ্নপত্র। অ্যাপে \"⬆ ফাইল খুলুন\" চেপে এই ফাইলটা খুলুন।";}
+    await navigator.share(o);
+    setStatus("পাঠানো হল। যিনি পাবেন, তিনি অ্যাপে \"⬆ ফাইল খুলুন\" চেপে ফাইলটা খুলবেন।"); return; } else why=why||"type"; }catch(e){ if(e&&e.name==="AbortError"){ setStatus("পাঠানো বাতিল হল।"); return; } why=(e&&e.name)||"err"; } }
+  setStatus(`এই ফোনে সরাসরি শেয়ার খুলল না (${why})। ফাইলটা ফোনের Download-এ নামিয়ে দিচ্ছি। WhatsApp-এ 📎 → "Document" চেপে Download থেকে ফাইলটা বেছে পাঠান।`,true);
   papersToFile(ids,base);
 }
 async function renderList(){
@@ -24728,7 +24732,7 @@ async function renderList(){
       const f=document.createElement("div"); f.className="pfold";
       f.innerHTML=`<button class="btn pfopen" type="button">📁 <b>${c?"শ্রেণি "+ROMC[c]:"শ্রেণি লেখা নেই"}</b> <span class="small">(${bn(n)}টি)</span></button><button class="btn" type="button" data-a="share"${n?"":" disabled"}>📤 শেয়ার</button><button class="btn" type="button" data-a="del"${n?"":" disabled"}>🗑 মুছুন</button>`;
       f.querySelector(".pfopen").onclick=()=>{ papFolder=c; papSel.clear(); renderList(); };
-      f.querySelector('[data-a="share"]').onclick=()=>sharePapers(metas.filter(m=>(m.cls||0)===c).map(m=>m.id),c?"শ্রেণি "+ROMC[c]+" – প্রশ্নপত্র":"প্রশ্নপত্র");
+      f.querySelector('[data-a="share"]').onclick=()=>sharePapers(metas.filter(m=>(m.cls||0)===c).map(m=>m.id),c?"শ্রেণি "+ROMC[c]+" – প্রশ্নপত্র":"প্রশ্নপত্র",c?"Class "+ROMC[c]+" question papers":"Question papers");
       f.querySelector('[data-a="del"]').onclick=()=>{ askDelete(metas.filter(m=>(m.cls||0)===c).map(m=>m.id)); };
       box.appendChild(f); }
   }
