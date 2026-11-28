@@ -818,7 +818,7 @@ select,.btn{font:inherit;font-size:.9rem;border-radius:7px;border:1px solid var(
 </svg>
     <div class="tx">
     <h1>Pankaj Question Maker <small style="font-size:.55em;color:var(--accent)">ফ্রি সংস্করণ</small></h1>
-    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২৬ নভেম্বর ৪ (শেয়ারে PDF)</p>
+    <p class="small" id="appVer" style="margin:2px 0 0;font-size:.78rem">সংস্করণ: ২৮ নভেম্বর (অন্যান্য ফোল্ডার)</p>
     <p>যেকোনো ফোন বা ল্যাপটপের ব্রাউজারে চলে। হাতে লেখা প্রশ্নের ছবি দিন। বাংলা, ইংরেজি, অংক, সূত্র, টেবিল আর চিত্র হুবহু টাইপ হয়ে প্রশ্নপত্রের মতো সাজানো হবে: ভাঁজ করা বুকলেট বা সাধারণ A4। তারপর PDF বা Google Docs।</p>
     </div>
   </header>
@@ -24776,16 +24776,16 @@ async function renderList(){
   const box=$("papItems"); box.innerHTML="";
   $("papAll").closest("label").hidden=!q&&!inFolder;
   if(metas.length&&!q&&!inFolder){ // folders: class I to XII, then "no class"
-    for(let k=1;k<=13;k++){ const c=k===13?0:k, n=metas.filter(m=>(m.cls||0)===c).length; if(c===0&&!n) continue;
+    for(let k=1;k<=13;k++){ const c=k===13?0:k, n=metas.filter(m=>(m.cls||0)===c).length;
       const f=document.createElement("div"); f.className="pfold";
-      f.innerHTML=`<button class="btn pfopen" type="button">📁 <b>${c?"শ্রেণি "+ROMC[c]:"শ্রেণি লেখা নেই"}</b> <span class="small">(${bn(n)}টি)</span></button><button class="btn" type="button" data-a="share"${n?"":" disabled"}>📤 শেয়ার</button><button class="btn" type="button" data-a="del"${n?"":" disabled"}>🗑 মুছুন</button>`;
+      f.innerHTML=`<button class="btn pfopen" type="button">📁 <b>${c?"শ্রেণি "+ROMC[c]:"অন্যান্য (Others)"}</b> <span class="small">(${bn(n)}টি)</span></button><button class="btn" type="button" data-a="share"${n?"":" disabled"}>📤 শেয়ার</button><button class="btn" type="button" data-a="del"${n?"":" disabled"}>🗑 মুছুন</button>`;
       f.querySelector(".pfopen").onclick=()=>{ papFolder=c; papSel.clear(); renderList(); };
       f.querySelector('[data-a="share"]').onclick=()=>shareAsk(metas.filter(m=>(m.cls||0)===c).map(m=>m.id),c?"শ্রেণি "+ROMC[c]+" – প্রশ্নপত্র":"প্রশ্নপত্র",c?"Class "+ROMC[c]+" question papers":"Question papers");
       f.querySelector('[data-a="del"]').onclick=()=>{ askDelete(metas.filter(m=>(m.cls||0)===c).map(m=>m.id)); };
       box.appendChild(f); }
   }
-  if(inFolder){ const bk=document.createElement("div"); bk.className="pfback"; bk.innerHTML=`<button class="btn" type="button">← সব ফোল্ডার</button> <b>📁 ${papFolder?"শ্রেণি "+ROMC[papFolder]:"শ্রেণি লেখা নেই"}</b>`; bk.querySelector("button").onclick=()=>{ papFolder=null; papSel.clear(); renderList(); }; box.appendChild(bk);
-    if(!shown.length){ const e=document.createElement("p"); e.className="small"; e.style.margin="6px 0"; e.textContent="এই শ্রেণির কোনো প্রশ্নপত্র এখনও নেই। প্রশ্নপত্রের মাথায় শ্রেণি লিখলে নিজে থেকে এখানে চলে আসবে।"; box.appendChild(e); } }
+  if(inFolder){ const bk=document.createElement("div"); bk.className="pfback"; bk.innerHTML=`<button class="btn" type="button">← সব ফোল্ডার</button> <b>📁 ${papFolder?"শ্রেণি "+ROMC[papFolder]:"অন্যান্য (Others)"}</b>`; bk.querySelector("button").onclick=()=>{ papFolder=null; papSel.clear(); renderList(); }; box.appendChild(bk);
+    if(!shown.length){ const e=document.createElement("p"); e.className="small"; e.style.margin="6px 0"; e.textContent=papFolder?"এই শ্রেণির কোনো প্রশ্নপত্র এখনও নেই। প্রশ্নপত্রের মাথায় শ্রেণি লিখলে নিজে থেকে এখানে চলে আসবে।":"এখানে কিছু নেই। যে প্রশ্নপত্রের মাথায় শ্রেণি লেখা থাকবে না, সেটা নিজে থেকে এখানে আসবে।"; box.appendChild(e); } }
   if(!metas.length){box.innerHTML='<p class="small" style="margin:6px 0">এখনও কোনো প্রশ্নপত্র সেভ হয়নি। লেখা পেস্ট করলে বা টাইপ করলেই এখানে চলে আসবে।</p>';}
   else if(q&&!shown.length){box.innerHTML='<p class="small" style="margin:6px 0">এই নামে কিছু পাওয়া গেল না।</p>';}
   shown.forEach(m=>{
